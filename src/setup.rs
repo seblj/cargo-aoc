@@ -14,6 +14,7 @@ async fn setup_template_project(year: i32) -> Result<(), Box<dyn std::error::Err
         tokio::fs::create_dir_all(&dir).await?;
         tokio::fs::copy(&template, format!("{dir}/main.rs")).await?;
     }
+    tokio::fs::remove_file(format!("year_{year}/src/main.rs")).await?;
     Ok(())
 }
 
