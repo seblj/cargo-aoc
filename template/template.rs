@@ -1,16 +1,25 @@
-fn read_input<T, P>(path: P) -> Vec<T>
+fn task_one(input: &[String]) -> usize
+{
+    unimplemented!()
+}
+
+fn task_two(input: &[String]) -> usize
+{
+    unimplemented!()
+}
+
+fn main()
+{
+    let input = read_input(get_input_file());
+    time(Task::One, task_one, &input);
+    time(Task::Two, task_two, &input);
+}
+
+fn read_input<P>(path: P) -> Vec<String>
 where
-    T: std::str::FromStr,
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
     P: AsRef<std::path::Path>,
 {
-    use std::io::BufRead;
-    let file = std::fs::File::open(path).unwrap();
-    std::io::BufReader::new(file)
-        .lines()
-        .flatten()
-        .flat_map(|s| T::from_str(&s))
-        .collect()
+    std::fs::read_to_string(path).unwrap().lines().map(String::from).collect()
 }
 
 enum Task
@@ -41,19 +50,7 @@ where
     };
 }
 
-fn main()
+fn get_input_file() -> String
 {
-    let input = read_input("input");
-    time(Task::One, task_one, &input);
-    time(Task::Two, task_two, &input);
-}
-
-fn task_one(input: &[i32]) -> i32
-{
-    unimplemented!()
-}
-
-fn task_two(input: &[i32]) -> i32
-{
-    unimplemented!()
+    std::env::args().nth(1).unwrap_or_else(|| "input".to_string())
 }
