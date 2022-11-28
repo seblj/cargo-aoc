@@ -1,6 +1,8 @@
 use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
+mod run;
 mod setup;
+mod util;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -14,7 +16,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                     .short('y')
                     .default_value(OsStr::from(chrono::Utc::now().year().to_string())),
             ),
-        );
+        )
+        .subcommand(clap::command!("run").args([Arg::new("day").short('d').required(false)]));
 
     let help = cmd.render_help();
     let matches = cmd.get_matches();
@@ -24,6 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         {
             setup::setup(matches).await.expect("Couldn't setup project properly")
         },
+        Some(("run", matches)) => run::run(matches).await?,
         _ =>
         {
             println!("{}", help);
