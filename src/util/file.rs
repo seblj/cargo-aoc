@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use reqwest::{header::COOKIE, StatusCode};
+
 pub async fn day_path<P: AsRef<Path>>(
     root: P,
     day: u32,
@@ -75,4 +77,32 @@ pub async fn cargo_path<P: AsRef<Path>>(path: P) -> Result<std::path::PathBuf, s
     }
 
     Err(not_found())
+}
+
+pub async fn download_input_file(
+    day: u32,
+    year: i32,
+    dir: &PathBuf,
+) -> Result<(), Box<dyn std::error::Error>>
+{
+    let token = dotenv::var("AOC_TOKEN")?;
+    let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
+    let res = reqwest::Client::new()
+        .get(url)
+        .header(COOKIE, format!("session={}", token))
+        .send()
+        .await?;
+
+    if res.status() != StatusCode::OK
+    {
+        let err = Box::<dyn std::error::Error>::from(format!(
+            "Couldn't download input for year: {} and day: {}",
+            year, day
+        ));
+        return Err(err);
+    }
+
+    let bytes = res.bytes().await?;
+    tokio::fs::write(dir.join("input"), bytes).await?;
+    Ok(())
 }

@@ -7,6 +7,7 @@ mod util;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
 {
+    dotenv::dotenv().ok();
     let mut cmd = Command::new("cargo-aoc")
         .author("Sebastian, seblyng98@gmail.com")
         .author("Sivert, sivert-joh@hotmail.com")
@@ -18,7 +19,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                     .default_value(OsStr::from(chrono::Utc::now().year().to_string())),
             ),
         )
-        .subcommand(clap::command!("run").args([Arg::new("day").short('d').required(false)]));
+        .subcommand(clap::command!("run").args([
+            Arg::new("day").short('d').required(false),
+            Arg::new("year").short('y').required(false),
+        ]));
 
     let help = cmd.render_help();
     let matches = cmd.get_matches();

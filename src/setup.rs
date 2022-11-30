@@ -20,7 +20,6 @@ async fn setup_template_project(year: i32) -> Result<(), Box<dyn std::error::Err
 
 async fn get_session_token() -> Result<(), Box<dyn std::error::Error>>
 {
-    dotenv::dotenv().ok();
     if dotenv::var("AOC_TOKEN").is_err()
     {
         println!("Paste session token here for automatic download of input files");

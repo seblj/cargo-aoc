@@ -15,6 +15,25 @@ fn get_day(matches: &ArgMatches) -> Result<u32, std::num::ParseIntError>
     }
 }
 
+fn get_year(matches: &ArgMatches) -> Result<i32, std::num::ParseIntError>
+{
+    if let Some(year) = matches.get_one::<String>("year")
+    {
+        if year.chars().count() == 2
+        {
+            format!("20{}", year).parse()
+        }
+        else
+        {
+            year.parse()
+        }
+    }
+    else
+    {
+        Ok(Utc::now().year())
+    }
+}
+
 pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
 {
     let day = get_day(matches)?;
@@ -25,14 +44,21 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
         return Err(err);
     }
 
-
     let cwd = std::env::current_dir()?;
     let path = cargo_path(&cwd).await.unwrap_or(cwd);
     let dir = day_path(path, day).await?;
-    let dir = dir.to_str().unwrap();
 
-    // check here that 'input' actually exists
-    // ...
+    if !dir.join("input").exists()
+    {
+        let year = get_year(matches)?;
+        let current_year = Utc::now().year();
+        let current_month = Utc::now().month();
+        if year < 2015 || year > current_year || (year == current_year && current_month < 12)
+        {
+            return Err(Box::<_>::from(format!("No advent of code for {}", year)));
+        }
+        download_input_file(day, year, &dir).await?;
+    }
 
     let res = tokio::process::Command::new("cargo")
         .args(["run", "--bin", format!("day_{:02}", day).as_str(), "--color", "always"])
