@@ -10,6 +10,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let mut cmd = Command::new("cargo-aoc")
         .author("Sebastian, seblyng98@gmail.com")
         .author("Sivert, sivert-joh@hotmail.com")
+        .arg(Arg::new("dummy").hide(true))
         .subcommand(
             clap::command!("setup").arg(
                 Arg::new("year")
