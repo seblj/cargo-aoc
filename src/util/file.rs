@@ -95,11 +95,10 @@ pub async fn download_input_file(
 
     if res.status() != StatusCode::OK
     {
-        let err = Box::<dyn std::error::Error>::from(format!(
+        return Err(Box::<_>::from(format!(
             "Couldn't download input for year: {} and day: {}",
             year, day
-        ));
-        return Err(err);
+        )));
     }
 
     let bytes = res.bytes().await?;

@@ -40,8 +40,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
 
     if day < 1 || day > 25
     {
-        let err = Box::<dyn std::error::Error>::from("Day must be between 1 and 25");
-        return Err(err);
+        return Err(Box::<_>::from("Day must be between 1 and 25"));
     }
 
     let cwd = std::env::current_dir()?;
