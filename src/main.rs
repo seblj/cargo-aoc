@@ -14,16 +14,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         .author("Sivert, sivert-joh@hotmail.com")
         .arg(Arg::new("dummy").hide(true))
         .subcommand(
-            clap::command!("setup").arg(
-                Arg::new("year")
-                    .short('y')
-                    .default_value(OsStr::from(chrono::Utc::now().year().to_string())),
-            ),
+            clap::command!("setup")
+                .arg(
+                    Arg::new("year")
+                        .short('y')
+                        .default_value(OsStr::from(chrono::Utc::now().year().to_string()))
+                        .help("Year to setup folder structure for"),
+                )
+                .about(
+                    "Setup folder structure and asks for session token for automatic input \
+                     download",
+                ),
         )
-        .subcommand(clap::command!("run").args([
-            Arg::new("day").short('d').required(false),
-            Arg::new("year").short('y').required(false),
-        ]))
+        .subcommand(
+            clap::command!("run")
+                .args([
+                    Arg::new("day")
+                        .short('d')
+                        .required(false)
+                        .default_value(OsStr::from(chrono::Utc::now().day().to_string()))
+                        .help("Day to run"),
+                    Arg::new("year")
+                        .short('y')
+                        .required(false)
+                        .default_value(OsStr::from(chrono::Utc::now().year().to_string()))
+                        .help("Year for automatic download of input if not present"),
+                ])
+                .about("Runs the given day"),
+        )
         .subcommand(
             Command::new("token")
                 .about("Get or set the session token used to communicate with the AOC servers")
