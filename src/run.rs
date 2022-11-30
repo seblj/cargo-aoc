@@ -22,6 +22,18 @@ pub fn get_year(matches: &ArgMatches) -> Result<i32, std::num::ParseIntError>
 }
 
 
+async fn get_input_file(matches: &ArgMatches) -> Result<String, Box<dyn std::error::Error>>
+{
+    if matches.get_flag("test")
+    {
+        Ok("test".to_owned())
+    }
+    else
+    {
+        Ok("input".to_owned())
+    }
+}
+
 pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
 {
     let day = get_day(matches)?;
@@ -47,8 +59,10 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
         download_input_file(day, year, &dir).await?;
     }
 
+    let input = get_input_file(matches).await?;
+
     let res = tokio::process::Command::new("cargo")
-        .args(["run", "--bin", format!("day_{:02}", day).as_str(), "--color", "always"])
+        .args(["run", "--color", "always", "--bin", format!("day_{:02}", day).as_str(), &input])
         .current_dir(dir)
         .output()
         .await?;
