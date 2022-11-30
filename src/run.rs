@@ -70,7 +70,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
     let err = std::str::from_utf8(&res.stderr)?;
     if !err.is_empty()
     {
-        println!("error {}", err);
+        println!("{}", err);
     }
 
     let out = std::str::from_utf8(&res.stdout)?.trim_end();
