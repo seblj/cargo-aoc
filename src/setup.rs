@@ -3,7 +3,7 @@ use clap::ArgMatches;
 async fn setup_template_project(year: i32) -> Result<(), Box<dyn std::error::Error>>
 {
     tokio::process::Command::new("cargo")
-        .args(&["new", &format!("year_{}", year)])
+        .args(["new", &format!("year_{}", year)])
         .output()
         .await?;
 
