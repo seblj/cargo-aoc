@@ -2,6 +2,7 @@ use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
 mod run;
 mod setup;
+mod token;
 mod util;
 
 #[tokio::main]
@@ -22,7 +23,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         .subcommand(clap::command!("run").args([
             Arg::new("day").short('d').required(false),
             Arg::new("year").short('y').required(false),
-        ]));
+        ]))
+        .subcommand(
+            Command::new("token")
+                .about("Get or set the session token used to communicate with the AOC servers")
+                .arg_required_else_help(true)
+                .args([
+                    Arg::new("set")
+                        .short('s')
+                        .long("set")
+                        .exclusive(true)
+                        .help("Set the session token"),
+                    Arg::new("get")
+                        .short('g')
+                        .long("get")
+                        .exclusive(true)
+                        .num_args(0)
+                        .help("Print the current session token, if any"),
+                ]),
+        );
 
     let help = cmd.render_help();
     let matches = cmd.get_matches();
@@ -33,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             setup::setup(matches).await.expect("Couldn't setup project properly")
         },
         Some(("run", matches)) => run::run(matches).await?,
+        Some(("token", matches)) => token::token(matches).await,
         _ =>
         {
             println!("{}", help);
