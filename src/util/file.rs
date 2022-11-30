@@ -82,7 +82,7 @@ pub async fn cargo_path<P: AsRef<Path>>(path: P) -> Result<std::path::PathBuf, s
 pub async fn download_input_file(
     day: u32,
     year: i32,
-    dir: &PathBuf,
+    dir: &Path,
 ) -> Result<(), Box<dyn std::error::Error>>
 {
     let token = dotenv::var("AOC_TOKEN")?;

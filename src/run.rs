@@ -38,7 +38,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
 {
     let day = get_day(matches)?;
 
-    if day < 1 || day > 25
+    if !(1..=25).contains(&day)
     {
         return Err(Box::<_>::from("Day must be between 1 and 25"));
     }

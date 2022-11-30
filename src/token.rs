@@ -15,13 +15,9 @@ pub async fn token(matches: &ArgMatches)
     }
     else
     {
-        if let Ok(token) = dotenv::var("AOC_TOKEN")
-        {
-            println!("{}", token);
-        }
-        else
-        {
-            println!("Could not find token");
-        }
+        println!(
+            "{}",
+            dotenv::var("AOC_TOKEN").unwrap_or_else(|_| "Could not find token".to_string())
+        );
     }
 }
