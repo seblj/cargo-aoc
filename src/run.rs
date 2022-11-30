@@ -3,36 +3,24 @@ use clap::ArgMatches;
 
 use crate::util::file::*;
 
-fn get_day(matches: &ArgMatches) -> Result<u32, std::num::ParseIntError>
+pub fn get_day(matches: &ArgMatches) -> Result<u32, std::num::ParseIntError>
 {
-    if let Some(day) = matches.get_one::<String>("day")
+    matches.get_one::<String>("day").unwrap().parse()
+}
+
+pub fn get_year(matches: &ArgMatches) -> Result<i32, std::num::ParseIntError>
+{
+    let year = matches.get_one::<String>("year").unwrap();
+    if year.chars().count() == 2
     {
-        day.parse()
+        format!("20{}", year).parse()
     }
     else
     {
-        Ok(Utc::now().day())
+        year.parse()
     }
 }
 
-fn get_year(matches: &ArgMatches) -> Result<i32, std::num::ParseIntError>
-{
-    if let Some(year) = matches.get_one::<String>("year")
-    {
-        if year.chars().count() == 2
-        {
-            format!("20{}", year).parse()
-        }
-        else
-        {
-            year.parse()
-        }
-    }
-    else
-    {
-        Ok(Utc::now().year())
-    }
-}
 
 pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
 {
