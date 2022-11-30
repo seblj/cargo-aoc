@@ -39,6 +39,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                         .required(false)
                         .default_value(OsStr::from(chrono::Utc::now().year().to_string()))
                         .help("Year for automatic download of input if not present"),
+                    Arg::new("test")
+                        .short('t')
+                        .long("test")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Run the day with the \"test\" file"),
                 ])
                 .about("Runs the given day"),
         )
