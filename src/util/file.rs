@@ -3,7 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use reqwest::{header::COOKIE, StatusCode};
+use reqwest::{
+    header::{COOKIE, USER_AGENT},
+    StatusCode,
+};
 
 pub async fn day_path<P: AsRef<Path>>(
     root: P,
@@ -90,6 +93,7 @@ pub async fn download_input_file(
     let res = reqwest::Client::new()
         .get(url)
         .header(COOKIE, format!("session={}", token))
+        .header(USER_AGENT, "https://github.com/seblj/cargo-aoc by seblyng98@gmail.com")
         .send()
         .await?;
 
