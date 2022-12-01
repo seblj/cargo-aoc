@@ -1,26 +1,12 @@
 use chrono::prelude::*;
 use clap::ArgMatches;
 
-use crate::util::file::*;
+use crate::util::{file::*, get_year};
 
 pub fn get_day(matches: &ArgMatches) -> Result<u32, std::num::ParseIntError>
 {
     matches.get_one::<String>("day").unwrap().parse()
 }
-
-pub fn get_year(matches: &ArgMatches) -> Result<i32, std::num::ParseIntError>
-{
-    let year = matches.get_one::<String>("year").unwrap();
-    if year.chars().count() == 2
-    {
-        format!("20{}", year).parse()
-    }
-    else
-    {
-        year.parse()
-    }
-}
-
 
 async fn get_input_file(matches: &ArgMatches) -> Result<String, Box<dyn std::error::Error>>
 {
