@@ -1,5 +1,7 @@
 use clap::ArgMatches;
 
+use crate::util::get_year;
+
 async fn setup_template_project(year: i32) -> Result<(), Box<dyn std::error::Error>>
 {
     tokio::process::Command::new("cargo")
@@ -29,12 +31,10 @@ async fn get_session_token() -> Result<(), Box<dyn std::error::Error>>
 
         if !input.is_empty()
         {
-            tokio::fs::write(
-                format!("{}/.env", env!("CARGO_MANIFEST_DIR")),
-                format!("AOC_TOKEN={input}"),
-            )
-            .await
-            .expect("Couldn't write to file");
+            let env_file = std::env::current_dir()?.join(".env");
+            tokio::fs::write(env_file, format!("AOC_TOKEN={input}"))
+                .await
+                .expect("Couldn't write to file");
         }
     }
     Ok(())
@@ -42,11 +42,7 @@ async fn get_session_token() -> Result<(), Box<dyn std::error::Error>>
 
 pub async fn setup(args: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
 {
-    let year = args
-        .get_one::<String>("year")
-        .expect("No year specified")
-        .parse::<i32>()
-        .expect("Invalid year");
+    let year = get_year(args)?;
 
     setup_template_project(year).await?;
     get_session_token().await?;
