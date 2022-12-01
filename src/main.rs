@@ -28,6 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         )
         .subcommand(
             clap::command!("run")
+                .visible_alias("r")
                 .args([
                     Arg::new("day")
                         .short('d')
