@@ -60,9 +60,11 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
     }
 
     let input = get_input_file(matches).await?;
+    let flags = matches.get_one::<String>("compiler-flags").unwrap();
 
     let res = tokio::process::Command::new("cargo")
         .args(["run", "--color", "always", "--bin", format!("day_{:02}", day).as_str(), &input])
+        .env("RUSTFLAGS", flags)
         .current_dir(dir)
         .output()
         .await?;

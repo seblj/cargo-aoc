@@ -46,6 +46,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                         .required(false)
                         .action(clap::ArgAction::SetTrue)
                         .help("Run the day with the \"test\" file"),
+                    Arg::new("compiler-flags")
+                        .short('C')
+                        .long("compiler-flags")
+                        .required(false)
+                        .default_value(std::env::var("RUSTFLAGS").unwrap_or(String::new()))
+                        .allow_hyphen_values(true)
+                        .help("Flags to send to rustc"),
                 ])
                 .about("Runs the given day"),
         )
