@@ -53,6 +53,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                         .default_value(std::env::var("RUSTFLAGS").unwrap_or(String::new()))
                         .allow_hyphen_values(true)
                         .help("Flags to send to rustc"),
+                    Arg::new("submit")
+                        .short('S')
+                        .long("submit")
+                        .required(false)
+                        .help("Submit answer")
+                        .conflicts_with("test"),
                 ])
                 .about("Runs the given day"),
         )

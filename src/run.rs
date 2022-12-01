@@ -1,7 +1,11 @@
 use chrono::prelude::*;
 use clap::ArgMatches;
 
-use crate::util::{file::*, get_year};
+use crate::util::{
+    file::{cargo_path, day_path, download_input_file},
+    get_year,
+    submit::{self, get_submit_day},
+};
 
 pub fn get_day(matches: &ArgMatches) -> Result<u32, std::num::ParseIntError>
 {
@@ -66,5 +70,15 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
     let out = std::str::from_utf8(&res.stdout)?.trim_end();
     println!("{}", out);
 
+    let year = get_year(matches)?;
+    match get_submit_day(matches)
+    {
+        Ok(task) => match submit::submit(out, &task, day, year).await
+        {
+            Ok(output) => println!("Task {}: {}", task, output),
+            Err(e) => println!("Error submitting task {}: {}", task, e),
+        },
+        Err(e) => println!("Error: {}", e),
+    }
     Ok(())
 }
