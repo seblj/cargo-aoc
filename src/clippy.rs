@@ -1,11 +1,8 @@
 use clap::ArgMatches;
 
-pub fn get_day(matches: &ArgMatches) -> Result<u32, std::num::ParseIntError>
-{
-    matches.get_one::<String>("day").unwrap().parse()
-}
+use crate::{error::AocError, run::get_day};
 
-pub async fn clippy(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
+pub async fn clippy(matches: &ArgMatches) -> Result<(), AocError>
 {
     let day = get_day(matches)?;
 
