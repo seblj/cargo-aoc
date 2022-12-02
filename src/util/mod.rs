@@ -9,7 +9,6 @@ pub mod submit;
 pub enum ParseArgError
 {
     ParseError,
-    TypeError,
     Invalid(String),
 }
 
@@ -19,7 +18,6 @@ impl Display for ParseArgError
     {
         match self
         {
-            ParseArgError::TypeError => write!(f, "Incorrect type found"),
             ParseArgError::ParseError =>
             {
                 write!(f, "Couldn't parse input. Check that you are using the correct type")

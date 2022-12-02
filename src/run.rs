@@ -70,15 +70,19 @@ pub async fn run(matches: &ArgMatches) -> Result<(), Box<dyn std::error::Error>>
     let out = std::str::from_utf8(&res.stdout)?.trim_end();
     println!("{}", out);
 
-    let year = get_year(matches)?;
-    match get_submit_day(matches)
+    // Only try to submit if the submit flag is passed
+    if let Some(submit) = get_submit_day(matches)
     {
-        Ok(task) => match submit::submit(out, &task, day, year).await
+        let year = get_year(matches)?;
+        match submit
         {
-            Ok(output) => println!("Task {}: {}", task, output),
-            Err(e) => println!("Error submitting task {}: {}", task, e),
-        },
-        Err(e) => println!("Error: {}", e),
+            Ok(task) => match submit::submit(out, &task, day, year).await
+            {
+                Ok(output) => println!("Task {}: {}", task, output),
+                Err(e) => println!("Error submitting task {}: {}", task, e),
+            },
+            Err(e) => println!("Error: {}", e),
+        }
     }
     Ok(())
 }
