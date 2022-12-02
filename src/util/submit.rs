@@ -6,22 +6,20 @@ use sanitize_html::rules::predefined::DEFAULT;
 
 use super::ParseArgError;
 
-pub fn get_submit_day(matches: &ArgMatches) -> Result<Task, ParseArgError>
+pub fn get_submit_day(matches: &ArgMatches) -> Option<Result<Task, ParseArgError>>
 {
-    let day = matches.get_one::<String>("submit").ok_or_else(|| ParseArgError::TypeError)?;
+    let day = matches.get_one::<String>("submit")?;
+    let Ok(day) = day.parse::<u8>() else {
+        return Some(Err(ParseArgError::ParseError));
+    };
 
-    match day.parse::<u8>().map_err(|_| ParseArgError::ParseError)
+    match day
     {
-        Ok(day) => match day
-        {
-            1 => Ok(Task::One),
-            2 => Ok(Task::Two),
-            _ =>
-            {
-                Err(ParseArgError::Invalid("Only allowed to pass in 1 or 2 for submit".to_string()))
-            },
-        },
-        Err(_) => Err(ParseArgError::ParseError),
+        1 => Some(Ok(Task::One)),
+        2 => Some(Ok(Task::Two)),
+        _ => Some(Err(ParseArgError::Invalid(
+            "Only allowed to pass in 1 or 2 for submit".to_string(),
+        ))),
     }
 }
 
