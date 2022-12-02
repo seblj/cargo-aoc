@@ -1,5 +1,6 @@
 use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
+mod clippy;
 mod run;
 mod setup;
 mod token;
@@ -25,6 +26,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                     "Setup folder structure and asks for session token for automatic input \
                      download",
                 ),
+        )
+        .subcommand(
+            clap::command!("clippy")
+                .disable_version_flag(true)
+                .about("Run cargo clippy on the specified day")
+                .args([
+                    Arg::new("day")
+                        .short('d')
+                        .required(false)
+                        .default_value(OsStr::from(chrono::Utc::now().day().to_string()))
+                        .help("Day to check"),
+                    Arg::new("fix")
+                        .long("fix")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Fixes the issues clippy warns about"),
+                ]),
         )
         .subcommand(
             clap::command!("run")
@@ -91,6 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         },
         Some(("run", matches)) => run::run(matches).await?,
         Some(("token", matches)) => token::token(matches).await,
+        Some(("clippy", matches)) => clippy::clippy(matches).await?,
         _ =>
         {
             println!("{}", help);
