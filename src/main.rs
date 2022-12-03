@@ -1,13 +1,15 @@
 use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
+use error::AocError;
 mod clippy;
+mod error;
 mod run;
 mod setup;
 mod token;
 mod util;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>
+async fn main() -> Result<(), AocError>
 {
     dotenv::dotenv().ok();
     let mut cmd = Command::new("cargo-aoc")
@@ -68,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                         .short('C')
                         .long("compiler-flags")
                         .required(false)
-                        .default_value(std::env::var("RUSTFLAGS").unwrap_or(String::new()))
+                        .default_value(std::env::var("RUSTFLAGS").unwrap_or_default())
                         .allow_hyphen_values(true)
                         .help("Flags to send to rustc"),
                     Arg::new("submit")
@@ -108,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             setup::setup(matches).await.expect("Couldn't setup project properly")
         },
         Some(("run", matches)) => run::run(matches).await?,
-        Some(("token", matches)) => token::token(matches).await,
+        Some(("token", matches)) => token::token(matches).await?,
         Some(("clippy", matches)) => clippy::clippy(matches).await?,
         _ =>
         {

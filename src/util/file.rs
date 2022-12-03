@@ -3,15 +3,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use reqwest::{
-    header::{COOKIE, USER_AGENT},
-    StatusCode,
-};
+use reqwest::StatusCode;
 
-pub async fn day_path<P: AsRef<Path>>(
-    root: P,
-    day: u32,
-) -> Result<std::path::PathBuf, std::io::Error>
+use super::request::AocRequest;
+use crate::error::AocError;
+
+pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::PathBuf, AocError>
 {
     use std::{collections::VecDeque, io::*};
     let dir_name = format!("day_{:02}", day);
@@ -51,17 +48,19 @@ pub async fn day_path<P: AsRef<Path>>(
         }
     }
     let err_text = format!("could not find folder for day_{}", day);
-    Err(Error::new(ErrorKind::NotFound, err_text))
+    Err(Error::new(ErrorKind::NotFound, err_text).into())
 }
 
-pub async fn cargo_path<P: AsRef<Path>>(path: P) -> Result<std::path::PathBuf, std::io::Error>
+pub async fn cargo_path() -> Result<std::path::PathBuf, AocError>
 {
     use std::{collections::VecDeque, io::*};
 
     let mut vec = VecDeque::new();
-    vec.push_back(path.as_ref().as_os_str().to_os_string());
+    let path = std::env::current_dir()?;
+    vec.push_back(path.as_os_str().to_os_string());
 
-    let not_found = || Error::new(ErrorKind::NotFound, "could not find Cargo.toml file");
+    let not_found =
+        || AocError::StdIoErr(Error::new(ErrorKind::NotFound, "could not find Cargo.toml file"));
 
     while let Some(path) = vec.pop_front()
     {
@@ -82,24 +81,14 @@ pub async fn cargo_path<P: AsRef<Path>>(path: P) -> Result<std::path::PathBuf, s
     Err(not_found())
 }
 
-pub async fn download_input_file(
-    day: u32,
-    year: i32,
-    dir: &Path,
-) -> Result<(), Box<dyn std::error::Error>>
+pub async fn download_input_file(day: u32, year: i32, dir: &Path) -> Result<(), AocError>
 {
-    let token = dotenv::var("AOC_TOKEN")?;
     let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
-    let res = reqwest::Client::new()
-        .get(url)
-        .header(COOKIE, format!("session={}", token))
-        .header(USER_AGENT, "https://github.com/seblj/cargo-aoc by seblyng98@gmail.com")
-        .send()
-        .await?;
+    let res = AocRequest::new().get(url).await?;
 
     if res.status() != StatusCode::OK
     {
-        return Err(Box::<_>::from(format!(
+        return Err(AocError::DownloadError(format!(
             "Couldn't download input for year: {} and day: {}",
             year, day
         )));

@@ -1,41 +1,20 @@
-use std::fmt::Display;
-
 use clap::ArgMatches;
 
+use crate::error::AocError;
+
 pub mod file;
+pub mod request;
 pub mod submit;
 
-#[derive(Debug)]
-pub enum ParseArgError
+pub fn get_year(matches: &ArgMatches) -> Result<i32, AocError>
 {
-    ParseError,
-    Invalid(String),
-}
-
-impl Display for ParseArgError
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
-    {
-        match self
-        {
-            ParseArgError::ParseError =>
-            {
-                write!(f, "Couldn't parse input. Check that you are using the correct type")
-            },
-            ParseArgError::Invalid(s) => write!(f, "{}", s),
-        }
-    }
-}
-
-pub fn get_year(matches: &ArgMatches) -> Result<i32, std::num::ParseIntError>
-{
-    let year = matches.get_one::<String>("year").unwrap();
+    let year = matches.get_one::<String>("year").ok_or(AocError::ArgMatches)?;
     if year.chars().count() == 2
     {
-        format!("20{}", year).parse()
+        Ok(format!("20{}", year).parse()?)
     }
     else
     {
-        year.parse()
+        Ok(year.parse()?)
     }
 }
