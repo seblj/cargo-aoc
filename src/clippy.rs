@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 
-use crate::{error::AocError, run::get_day};
+use crate::{error::AocError, util::get_day};
 
 pub async fn clippy(matches: &ArgMatches) -> Result<(), AocError>
 {
