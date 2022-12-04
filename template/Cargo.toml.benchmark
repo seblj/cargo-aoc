@@ -1,0 +1,11 @@
+[package]
+name = "bench"
+version = "0.0.1"
+edition = "2021"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "my_benchmark"
+harness = false

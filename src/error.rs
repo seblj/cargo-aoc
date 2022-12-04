@@ -12,6 +12,7 @@ pub enum AocError
     ArgMatches,
     Utf8Error,
     StdIoErr(std::io::Error),
+    ArgError(String),
 }
 
 macro_rules! impl_from_helper {
@@ -46,6 +47,7 @@ macro_rules! impl_print {
                     AocError::StdIoErr(e) => write!(f, "{}", e),
                     AocError::DownloadError(e) => write!(f, "{}", e),
                     AocError::Utf8Error => write!(f, "Error on parsing to utf-8"),
+                    AocError::ArgError(e) => write!(f, "{}", e),
                 }
             }
         }
