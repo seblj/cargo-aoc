@@ -5,23 +5,10 @@ use crate::{
     error::AocError,
     util::{
         file::{cargo_path, day_path, download_input_file},
-        get_year,
+        get_day, get_year,
         submit::{self, get_submit_day},
     },
 };
-
-pub fn get_day(matches: &ArgMatches) -> Result<u32, AocError>
-{
-    let day = matches.get_one::<String>("day").ok_or(AocError::ArgMatches)?.parse::<u32>()?;
-    if !(1..=25).contains(&day)
-    {
-        Err(AocError::InvalidRunDay)
-    }
-    else
-    {
-        Ok(day)
-    }
-}
 
 fn get_input_file(matches: &ArgMatches) -> &str
 {

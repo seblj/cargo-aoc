@@ -18,3 +18,16 @@ pub fn get_year(matches: &ArgMatches) -> Result<i32, AocError>
         Ok(year.parse()?)
     }
 }
+
+pub fn get_day(matches: &ArgMatches) -> Result<u32, AocError>
+{
+    let day = matches.get_one::<String>("day").ok_or(AocError::ArgMatches)?.parse::<u32>()?;
+    if !(1..=25).contains(&day)
+    {
+        Err(AocError::InvalidRunDay)
+    }
+    else
+    {
+        Ok(day)
+    }
+}
