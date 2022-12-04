@@ -14,3 +14,10 @@ sanitize_html = "0.7.0"
 serde = "1.0.148"
 strip-ansi-escapes = "0.1.1"
 tokio = { version = "1.22.0", features = ["full"] }
+
+criterion = { version = "0.3", optional = true }
+
+
+[features]
+default = ["bench"]
+bench = ["criterion"]

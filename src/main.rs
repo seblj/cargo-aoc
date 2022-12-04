@@ -1,6 +1,7 @@
 use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
 use error::AocError;
+#[cfg(feature = "bench")] mod bench;
 mod clippy;
 mod error;
 mod run;
@@ -101,6 +102,24 @@ async fn main() -> Result<(), AocError>
                 ]),
         );
 
+
+    #[cfg(feature = "bench")]
+    {
+        cmd = cmd.subcommand(
+            Command::new("bench").about("Run benchmarks for the specified day").args([
+                Arg::new("day")
+                    .help("The day to benchmark")
+                    .short('d')
+                    .default_value(chrono::Utc::now().day().to_string()),
+                Arg::new("output")
+                    .help("Output location")
+                    .short('o')
+                    .long("output")
+                    .required(false),
+            ]),
+        );
+    }
+
     let help = cmd.render_help();
     let matches = cmd.get_matches();
     match matches.subcommand()
@@ -112,6 +131,9 @@ async fn main() -> Result<(), AocError>
         Some(("run", matches)) => run::run(matches).await?,
         Some(("token", matches)) => token::token(matches).await?,
         Some(("clippy", matches)) => clippy::clippy(matches).await?,
+
+        #[cfg(feature = "bench")]
+        Some(("bench", matches)) => bench::bench(matches).await?,
         _ =>
         {
             println!("{}", help);
