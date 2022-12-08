@@ -5,6 +5,8 @@ use tokio::task::JoinSet;
 
 use crate::{error::AocError, util::file::*};
 
+const TOO_MANY_OPEN_FILES: i32 = 24;
+
 async fn days() -> Result<(Vec<(PathBuf, u32)>, Vec<u32>), AocError>
 {
     let path = cargo_path().await?;
@@ -35,7 +37,7 @@ async fn days() -> Result<(Vec<(PathBuf, u32)>, Vec<u32>), AocError>
     Ok((have, dont_have))
 }
 
-async fn build_day(day: u32) -> Result<(), AocError>
+async fn build_day(folder: PathBuf, path: PathBuf, day: u32) -> Result<(), AocError>
 {
     let bin = format!("day_{:02}", day);
     let res = tokio::process::Command::new("cargo")
@@ -43,16 +45,13 @@ async fn build_day(day: u32) -> Result<(), AocError>
         .output()
         .await?;
 
-    let mut folder = cargo_path().await?;
-    let mut day_folder = day_path(&folder, day).await?;
-    day_folder.push("main");
+    let dst = path.join("main");
 
+    let mut target = folder;
+    target.push("target/release");
+    target.push(&bin);
 
-    folder.push("target/release");
-    folder.push(&bin);
-
-
-    tokio::fs::copy(folder, day_folder).await?;
+    tokio::fs::copy(target, dst).await?;
 
     if !res.status.success()
     {
@@ -67,15 +66,18 @@ async fn build_day(day: u32) -> Result<(), AocError>
 async fn build_days(days: &[(PathBuf, u32)]) -> Result<(), AocError>
 {
     let mut set = JoinSet::new();
-    for (_path, day) in days.iter()
+    let cargo_path = cargo_path().await?;
+    for (path, day) in days.iter()
     {
         let day = *day;
-        set.spawn(async move { build_day(day).await });
+        let path = path.clone();
+        let cargo_path = cargo_path.clone();
+        set.spawn(async move { build_day(cargo_path, path, day).await });
     }
 
     while let Some(Ok(res)) = set.join_next().await
     {
-        res?; // Ensure they are all OK
+        res?;
     }
 
     Ok(())
@@ -112,6 +114,19 @@ async fn run_day(
     let mut vec: Vec<(usize, Option<usize>)> = Vec::new();
     while let Some(Ok(res)) = set.join_next().await
     {
+        if let Err(ref e) = res
+        {
+            if e.raw_os_error().ok_or(AocError::RunError("Error getting os error".into()))?
+                == TOO_MANY_OPEN_FILES
+            {
+                let dir = day.0.clone();
+                set.spawn(async move {
+                    tokio::process::Command::new("./main").current_dir(dir).output().await
+                });
+                continue;
+            }
+        }
+
         let res = res?;
         if !res.status.success()
         {
@@ -132,10 +147,8 @@ async fn run_day(
 
 
     // Remove the executable
-    let folder = cargo_path().await?;
-    let mut day_folder = day_path(&folder, day.1).await?;
-    day_folder.push("main");
-    tokio::fs::remove_file(day_folder).await?;
+    let exec = day.0.join("main");
+    tokio::fs::remove_file(exec).await?;
 
     Ok((p1 / len, p2.map(|val| val / len)))
 }
