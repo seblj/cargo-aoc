@@ -13,6 +13,10 @@ pub enum AocError
     Utf8Error,
     StdIoErr(std::io::Error),
     ArgError(String),
+    #[cfg(feature = "tally")]
+    BuildError(String),
+    #[cfg(feature = "tally")]
+    RunError(String),
 }
 
 macro_rules! impl_from_helper {
@@ -48,6 +52,10 @@ macro_rules! impl_print {
                     AocError::DownloadError(e) => write!(f, "{}", e),
                     AocError::Utf8Error => write!(f, "Error on parsing to utf-8"),
                     AocError::ArgError(e) => write!(f, "{}", e),
+                    #[cfg(feature = "tally")]
+                    AocError::BuildError(e) => write!(f, "{}", e),
+                    #[cfg(feature = "tally")]
+                    AocError::RunError(e) => write!(f, "{}", e),
                 }
             }
         }

@@ -6,6 +6,7 @@ mod clippy;
 mod error;
 mod run;
 mod setup;
+#[cfg(feature = "tally")] mod tally;
 mod token;
 mod util;
 
@@ -102,6 +103,17 @@ async fn main() -> Result<(), AocError>
                 ]),
         );
 
+    #[cfg(feature = "tally")]
+    {
+        cmd = cmd.subcommand(
+            Command::new("tally")
+                .about(
+                    "Tallies the  performance of each day and displays information about the \
+                     performance",
+                )
+                .arg(Arg::new("runs").long("num-runs").help("Number of runs").default_value("1")),
+        );
+    }
 
     #[cfg(feature = "bench")]
     {
@@ -134,6 +146,9 @@ async fn main() -> Result<(), AocError>
 
         #[cfg(feature = "bench")]
         Some(("bench", matches)) => bench::bench(matches).await?,
+
+        #[cfg(feature = "tally")]
+        Some(("tally", matches)) => tally::tally(matches).await?,
         _ =>
         {
             println!("{}", help);
