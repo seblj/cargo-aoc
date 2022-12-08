@@ -37,21 +37,13 @@ async fn days() -> Result<(Vec<(PathBuf, u32)>, Vec<u32>), AocError>
     Ok((have, dont_have))
 }
 
-async fn build_day(folder: PathBuf, path: PathBuf, day: u32) -> Result<(), AocError>
+async fn build_day(day: u32) -> Result<(), AocError>
 {
     let bin = format!("day_{:02}", day);
     let res = tokio::process::Command::new("cargo")
         .args(["build", "--release", "--bin", &bin])
         .output()
         .await?;
-
-    let dst = path.join("main");
-
-    let mut target = folder;
-    target.push("target/release");
-    target.push(&bin);
-
-    tokio::fs::copy(target, dst).await?;
 
     if !res.status.success()
     {
@@ -66,13 +58,10 @@ async fn build_day(folder: PathBuf, path: PathBuf, day: u32) -> Result<(), AocEr
 async fn build_days(days: &[(PathBuf, u32)]) -> Result<(), AocError>
 {
     let mut set = JoinSet::new();
-    let cargo_path = cargo_path().await?;
-    for (path, day) in days.iter()
+    for (_path, day) in days.iter()
     {
         let day = *day;
-        let path = path.clone();
-        let cargo_path = cargo_path.clone();
-        set.spawn(async move { build_day(cargo_path, path, day).await });
+        set.spawn(async move { build_day(day).await });
     }
 
     while let Some(Ok(res)) = set.join_next().await
@@ -99,16 +88,23 @@ fn parse_get_times(output: Output) -> (usize, Option<usize>)
 }
 
 async fn run_day(
+    cargo_folder: PathBuf,
     day: (PathBuf, u32),
     number_of_runs: usize,
 ) -> Result<(usize, Option<usize>), AocError>
 {
+    let bin = format!("day_{:02}", day.1);
+    let mut target = cargo_folder;
+    target.push("target/release");
+    target.push(&bin);
+
     let mut set = JoinSet::new();
     for _ in 0..number_of_runs
     {
         let dir = day.0.clone();
+        let target = target.clone();
         set.spawn(
-            async move { tokio::process::Command::new("./main").current_dir(dir).output().await },
+            async move { tokio::process::Command::new(target).current_dir(dir).output().await },
         );
     }
     let mut vec: Vec<(usize, Option<usize>)> = Vec::new();
@@ -116,12 +112,15 @@ async fn run_day(
     {
         if let Err(ref e) = res
         {
-            if e.raw_os_error().ok_or(AocError::RunError("Error getting os error".into()))?
+            // Just try again if we have too many files open
+            if e.raw_os_error()
+                .ok_or_else(|| AocError::RunError("Error getting os error".into()))?
                 == TOO_MANY_OPEN_FILES
             {
                 let dir = day.0.clone();
+                let target = target.clone();
                 set.spawn(async move {
-                    tokio::process::Command::new("./main").current_dir(dir).output().await
+                    tokio::process::Command::new(target).current_dir(dir).output().await
                 });
                 continue;
             }
@@ -145,11 +144,6 @@ async fn run_day(
         })
     });
 
-
-    // Remove the executable
-    let exec = day.0.join("main");
-    tokio::fs::remove_file(exec).await?;
-
     Ok((p1 / len, p2.map(|val| val / len)))
 }
 
@@ -160,9 +154,11 @@ async fn run_days(
 {
     let mut set = JoinSet::new();
     let mut vec: Vec<(u32, (usize, Option<usize>))> = Vec::new();
+    let cargo_folder = cargo_path().await?;
     for day in days
     {
-        set.spawn(async move { (day.1, run_day(day, number_of_runs).await) });
+        let cargo_folder = cargo_folder.clone();
+        set.spawn(async move { (day.1, run_day(cargo_folder, day, number_of_runs).await) });
     }
 
     while let Some(Ok((day, res))) = set.join_next().await
