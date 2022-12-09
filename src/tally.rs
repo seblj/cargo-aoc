@@ -222,8 +222,11 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
         .filter_map(|(day, (_, p2))| p2.map(|p2| (day, p2)))
         .collect::<Vec<_>>();
 
+    let total = gold.iter().chain(silver.iter()).map(|(_, time)| time).sum::<usize>();
+
     print_info(silver_text("Silver"), silver);
     print_info(gold_text("Gold"), gold);
+    println!("\nTOTAL TIME: {}ms", total);
 }
 
 pub async fn tally(matches: &ArgMatches) -> Result<(), AocError>
