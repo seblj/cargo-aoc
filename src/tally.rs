@@ -217,12 +217,12 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
         let total = vec.iter().map(|(_, time)| time).sum::<usize>();
         let avg = total / vec.len();
 
-        let (day, time) = vec.iter().max_by_key(|k| k.1).unwrap();
+        let (highest_day, highest_time) = vec.iter().max_by_key(|k| k.1).unwrap();
 
         println!("\t Total time:  \t{}ms", total);
         println!("\t Average time:\t{}ms", avg);
         println!("\t Median time: \t{}ms", median);
-        println!("\t Highest time:\t{}ms, day: {}", time, day);
+        println!("\t Highest time:\t{}ms, day: {}", highest_time, highest_day);
         println!();
     };
 
