@@ -19,5 +19,6 @@ criterion = { version = "0.3", optional = true }
 
 
 [features]
-default = ["bench"]
+default = ["bench", "tally"]
 bench = ["criterion"]
+tally = []
