@@ -55,7 +55,7 @@ async fn build_day(day: u32) -> Result<(), AocError>
     }
 }
 
-async fn build_days(days: &[(PathBuf, u32)]) -> Result<(), AocError>
+async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Vec<u32>, AocError>
 {
     let mut set = JoinSet::new();
     for (_path, day) in days.iter()
@@ -69,22 +69,33 @@ async fn build_days(days: &[(PathBuf, u32)]) -> Result<(), AocError>
         res?;
     }
 
-    Ok(())
+    let mut vec = Vec::new();
+    for (pb, day) in days
+    {
+        let pb = pb.clone();
+        let day = *day;
+        if run_day(cargo_folder.clone(), (pb, day), 1).await.is_err()
+        {
+            vec.push(day);
+        }
+    }
+
+    Ok(vec)
 }
 
-fn parse_get_times(output: Output) -> (usize, Option<usize>)
+fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
 {
-    let parse = |line: &str| {
-        let start = line.find('(').unwrap();
-        let stop = line.find("ms)").unwrap();
-        line[start + 1..stop].parse().unwrap()
+    let parse = |line: &str| -> Result<usize, AocError> {
+        let start = line.find('(').ok_or_else(|| AocError::ParseStdout)?;
+        let stop = line.find("ms)").ok_or_else(|| AocError::ParseStdout)?;
+        Ok(line[start + 1..stop].parse().unwrap())
     };
     let text = std::str::from_utf8(&output.stdout).unwrap();
     let mut iter = text.split('\n');
-    let p1 = parse(iter.next().unwrap());
-    let p2 = iter.next().map(parse);
+    let p1 = parse(iter.next().unwrap())?;
+    let p2 = iter.next().and_then(|n| parse(n).ok());
 
-    (p1, p2)
+    Ok((p1, p2))
 }
 
 async fn run_day(
@@ -131,7 +142,7 @@ async fn run_day(
         {
             return Err(AocError::RunError(format!("Error running day {}", day.1)));
         }
-        vec.push(parse_get_times(res));
+        vec.push(parse_get_times(res)?);
     }
 
     let len = vec.len();
@@ -233,9 +244,16 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError>
 {
     let number_of_runs: usize =
         matches.get_one::<String>("runs").ok_or(AocError::ArgMatches)?.parse()?;
+    let cargo_folder = cargo_path().await?;
 
-    let (have, dont) = days().await?;
-    build_days(&have).await?;
+    let (mut have, mut dont) = days().await?;
+    let unimplementeds = build_days(cargo_folder, &have).await?;
+
+    have.retain(|elem| !unimplementeds.contains(&elem.1));
+    for unimpl in unimplementeds
+    {
+        dont.push(unimpl);
+    }
 
     let mut res = run_days(have, number_of_runs).await?;
     res.sort_unstable_by_key(|v| v.0);
