@@ -1,6 +1,7 @@
 use std::{path::PathBuf, process::Output};
 
 use clap::ArgMatches;
+use rayon::prelude::*;
 use tokio::task::JoinSet;
 
 use crate::{error::AocError, util::file::*};
@@ -57,30 +58,36 @@ async fn build_day(day: u32) -> Result<(), AocError>
 
 async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Vec<u32>, AocError>
 {
-    let mut set = JoinSet::new();
-    for (_path, day) in days.iter()
-    {
-        let day = *day;
-        set.spawn(async move { build_day(day).await });
-    }
+    days.into_par_iter().try_for_each(|(_path, day)| {
+        let bin = format!("day_{:02}", day);
+        let res = std::process::Command::new("cargo")
+            .args(["build", "--release", "--bin", &bin])
+            .output()?;
 
-    while let Some(Ok(res)) = set.join_next().await
-    {
-        res?;
-    }
-
-    let mut vec = Vec::new();
-    for (pb, day) in days
-    {
-        let pb = pb.clone();
-        let day = *day;
-        if run_day(cargo_folder.clone(), (pb, day), 1).await.is_err()
+        if !res.status.success()
         {
-            vec.push(day);
+            Err(AocError::BuildError(bin.to_string()))
         }
-    }
+        else
+        {
+            Ok(())
+        }
+    })?;
 
-    Ok(vec)
+    Ok(days
+        .into_par_iter()
+        .flat_map(|(pb, day)| {
+            let pb = pb.clone();
+            let day = *day;
+            let bin = format!("day_{:02}", day);
+            let mut target = cargo_folder.clone();
+            target.push("target/release");
+            target.push(&bin);
+
+            let res = std::process::Command::new(target).current_dir(&pb).output();
+            res.map_err(|_| day).err()
+        })
+        .collect())
 }
 
 fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
@@ -98,7 +105,7 @@ fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
     Ok((p1, p2))
 }
 
-async fn run_day(
+fn run_day(
     cargo_folder: PathBuf,
     day: (PathBuf, u32),
     number_of_runs: usize,
@@ -108,36 +115,13 @@ async fn run_day(
     let mut target = cargo_folder;
     target.push("target/release");
     target.push(&bin);
+    let mut vec = Vec::with_capacity(number_of_runs);
 
-    let mut set = JoinSet::new();
     for _ in 0..number_of_runs
     {
         let dir = day.0.clone();
         let target = target.clone();
-        set.spawn(
-            async move { tokio::process::Command::new(target).current_dir(dir).output().await },
-        );
-    }
-    let mut vec: Vec<(usize, Option<usize>)> = Vec::new();
-    while let Some(Ok(res)) = set.join_next().await
-    {
-        if let Err(ref e) = res
-        {
-            // Just try again if we have too many files open
-            if e.raw_os_error()
-                .ok_or_else(|| AocError::RunError("Error getting os error".into()))?
-                == TOO_MANY_OPEN_FILES
-            {
-                let dir = day.0.clone();
-                let target = target.clone();
-                set.spawn(async move {
-                    tokio::process::Command::new(target).current_dir(dir).output().await
-                });
-                continue;
-            }
-        }
-
-        let res = res?;
+        let res = std::process::Command::new(target).current_dir(dir).output()?;
         if !res.status.success()
         {
             return Err(AocError::RunError(format!("Error running day {}", day.1)));
@@ -146,14 +130,15 @@ async fn run_day(
     }
 
     let len = vec.len();
-    let (p1, p2) = vec.into_iter().fold((0, Option::<usize>::None), |(p1, p2), (a, b)| {
-        (p1 + a, match (p2, b)
-        {
-            (Some(a), Some(b)) => Some(a + b),
-            (None, Some(b)) => Some(b),
-            _ => None,
-        })
-    });
+    let (p1, p2): (usize, Option<usize>) =
+        vec.into_iter().fold((0, Option::<usize>::None), |(p1, p2), (a, b)| {
+            (p1 + a, match (p2, b)
+            {
+                (Some(a), Some(b)) => Some(a + b),
+                (None, Some(b)) => Some(b),
+                _ => None,
+            })
+        });
 
     Ok((p1 / len, p2.map(|val| val / len)))
 }
@@ -163,21 +148,17 @@ async fn run_days(
     number_of_runs: usize,
 ) -> Result<Vec<(u32, (usize, Option<usize>))>, AocError>
 {
-    let mut set = JoinSet::new();
-    let mut vec: Vec<(u32, (usize, Option<usize>))> = Vec::new();
     let cargo_folder = cargo_path().await?;
-    for day in days
-    {
-        let cargo_folder = cargo_folder.clone();
-        set.spawn(async move { (day.1, run_day(cargo_folder, day, number_of_runs).await) });
-    }
+    Ok(days
+        .into_par_iter()
+        .map(|day| {
+            let cargo_folder = cargo_folder.clone();
+            let d = day.1;
 
-    while let Some(Ok((day, res))) = set.join_next().await
-    {
-        vec.push((day, res?));
-    }
-
-    Ok(vec)
+            let res = run_day(cargo_folder, day, number_of_runs).expect("Running day");
+            (d, res)
+        })
+        .collect())
 }
 
 fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, number_of_runs: usize)

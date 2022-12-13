@@ -16,6 +16,7 @@ strip-ansi-escapes = "0.1.1"
 tokio = { version = "1.22.0", features = ["full"] }
 
 criterion = { version = "0.3", optional = true }
+rayon = "1.6.1"
 
 
 [features]
