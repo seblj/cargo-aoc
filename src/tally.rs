@@ -7,23 +7,28 @@ use tokio::task::JoinSet;
 use crate::{error::AocError, util::file::*};
 
 // Helper function to:
-// 1. iterate over a vector
+// 1. iterate over a collection
 // 2. spawn a scoped thread for each item
 // 3. map each item T to a new type U
 // 4. collect the items into some R
-fn thread_exec<T, U, F, R>(vec: &[T], f: F) -> R
+fn thread_exec<T, U, I, F, R>(iter: I, f: F) -> R
 where
-    F: Fn(&T) -> U + Send + Clone + Copy,
+    F: Fn(T) -> U + Send + Clone + Copy,
     R: FromIterator<U>,
-    U: Send + Sync,
-    T: Send + Sync,
+    U: Send,
+    T: Send,
+    I: IntoIterator<Item = T>,
 {
     // Collecting the JoinHandles are very important to actually spawn the threads.
     // Removing the collect results in sequential execution
     #[allow(clippy::needless_collect)]
     std::thread::scope(|s| {
-        let handles = vec.iter().map(|v| s.spawn(move || f(v))).collect::<Vec<_>>();
-        handles.into_iter().map(|h| h.join().unwrap()).collect::<R>()
+        iter.into_iter()
+            .map(|v| s.spawn(move || f(v)))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|h| h.join().unwrap())
+            .collect::<R>()
     })
 }
 
@@ -186,17 +191,23 @@ async fn run_days(
     // Sort it to get the progress bars in increasing order
     let mut days = days;
     days.sort_unstable_by_key(|k| k.1);
+    let days = days
+        .into_iter()
+        .map(|day| {
+            let sty = sty.clone();
+            let progress = multi.add(ProgressBar::new(number_of_runs as u64));
 
-    Ok(thread_exec(&days, |day| {
-        let sty = sty.clone();
+            progress.set_style(sty);
+            progress.set_message(format!("Running day {}", day.1));
+            (day, progress)
+        })
+        .collect::<Vec<_>>();
+
+    Ok(thread_exec(days, |(day, progress)| {
         let cargo_folder = cargo_folder.clone();
-        let progress = multi.add(ProgressBar::new(number_of_runs as u64));
         let d = day.1;
 
-        progress.set_style(sty);
-        progress.set_message(format!("Running day {}", d));
-
-        let res = run_day(cargo_folder, day, number_of_runs, progress).expect("Running day");
+        let res = run_day(cargo_folder, &day, number_of_runs, progress).expect("Running day");
         (d, res)
     }))
 }
