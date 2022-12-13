@@ -2,7 +2,6 @@ use std::{path::PathBuf, process::Output};
 
 use clap::ArgMatches;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use rayon::prelude::*;
 use tokio::task::JoinSet;
 
 use crate::{error::AocError, util::file::*};
@@ -69,41 +68,64 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
     progress.set_style(sty);
     progress.set_message("compiling");
 
-    days.into_par_iter().try_for_each(|(_path, day)| {
-        let bin = format!("day_{:02}", day);
-        let res = std::process::Command::new("cargo")
-            .args(["build", "--release", "--bin", &bin])
-            .output()?;
+    std::thread::scope(|s| {
+        let mut handles = Vec::with_capacity(days.len());
+        for (_path, day) in days.iter()
+        {
+            let day = *day;
+            let progress = progress.clone();
+            handles.push(s.spawn(move || {
+                let bin = format!("day_{:02}", day);
+                let res = std::process::Command::new("cargo")
+                    .args(["build", "--release", "--bin", &bin])
+                    .output()?;
 
-        progress.inc(1);
-        if !res.status.success()
-        {
-            Err(AocError::BuildError(bin.to_string()))
+                progress.inc(1);
+                if !res.status.success()
+                {
+                    Err(AocError::BuildError(bin.to_string()))
+                }
+                else
+                {
+                    Ok(())
+                }
+            }));
         }
-        else
-        {
-            Ok(())
-        }
+        handles.into_iter().map(|h| h.join().unwrap()).collect::<Result<(), AocError>>()
     })?;
 
     progress.reset();
     progress.set_message("verifying days");
 
-    Ok(days
-        .into_par_iter()
-        .flat_map(|(pb, day)| {
+    let v = std::thread::scope(|s| {
+        let mut handles = Vec::with_capacity(days.len());
+        for (pb, day) in days
+        {
             let pb = pb.clone();
             let day = *day;
             let bin = format!("day_{:02}", day);
             let mut target = cargo_folder.clone();
             target.push("target/release");
             target.push(&bin);
+            let progress = progress.clone();
 
-            let res = std::process::Command::new(target).current_dir(&pb).output();
-            progress.inc(1);
-            res.map_err(|_| day).err()
-        })
-        .collect())
+            handles.push(s.spawn(move || {
+                let res = match std::process::Command::new(target).current_dir(&pb).output()
+                {
+                    Ok(res) =>
+                    {
+                        // collect all 'unimplemented' days
+                        parse_get_times(res).map_err(|_| day).err()
+                    },
+                    Err(_) => Some(day),
+                };
+                progress.inc(1);
+                res
+            }))
+        }
+        handles.into_iter().flat_map(|h| h.join().unwrap()).collect::<Vec<_>>()
+    });
+    Ok(v)
 }
 
 fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
