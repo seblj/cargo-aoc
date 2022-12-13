@@ -174,6 +174,10 @@ async fn run_days(
     .unwrap()
     .progress_chars("##-");
 
+    // Sort it to get the progress bars in increasing order
+    let mut days = days;
+    days.sort_unstable_by_key(|k| k.1);
+
     let v = std::thread::scope(|s| {
         let mut handles = Vec::with_capacity(days.len());
         for day in days
