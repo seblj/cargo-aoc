@@ -174,21 +174,27 @@ async fn run_days(
     .unwrap()
     .progress_chars("##-");
 
-
-    Ok(days
-        .into_par_iter()
-        .map(|day| {
+    let v = std::thread::scope(|s| {
+        let mut handles = Vec::with_capacity(days.len());
+        for day in days
+        {
+            let sty = sty.clone();
             let cargo_folder = cargo_folder.clone();
-            let d = day.1;
-
             let progress = multi.add(ProgressBar::new(number_of_runs as u64));
-            progress.set_style(sty.clone());
+            let d = day.1;
+            progress.set_style(sty);
             progress.set_message(format!("Running day {}", d));
 
-            let res = run_day(cargo_folder, day, number_of_runs, progress).expect("Running day");
-            (d, res)
-        })
-        .collect())
+            handles.push(s.spawn(move || {
+                let res =
+                    run_day(cargo_folder, day, number_of_runs, progress).expect("Running day");
+                (d, res)
+            }));
+        }
+        handles.into_iter().map(|h| h.join().unwrap()).collect::<Vec<_>>()
+    });
+
+    Ok(v)
 }
 
 fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, number_of_runs: usize)
