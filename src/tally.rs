@@ -1,6 +1,7 @@
 use std::{path::PathBuf, process::Output};
 
 use clap::ArgMatches;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use tokio::task::JoinSet;
 
@@ -58,12 +59,23 @@ async fn build_day(day: u32) -> Result<(), AocError>
 
 async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Vec<u32>, AocError>
 {
+    let sty = ProgressStyle::with_template(
+        "[{elapsed_precise}] {msg}... {bar:40.cyan/blue} {pos:>7}/{len:7}",
+    )
+    .unwrap()
+    .progress_chars("##-");
+
+    let progress = ProgressBar::new(days.len() as u64);
+    progress.set_style(sty);
+    progress.set_message("compiling");
+
     days.into_par_iter().try_for_each(|(_path, day)| {
         let bin = format!("day_{:02}", day);
         let res = std::process::Command::new("cargo")
             .args(["build", "--release", "--bin", &bin])
             .output()?;
 
+        progress.inc(1);
         if !res.status.success()
         {
             Err(AocError::BuildError(bin.to_string()))
@@ -73,6 +85,9 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
             Ok(())
         }
     })?;
+
+    progress.reset();
+    progress.set_message("verifying days");
 
     Ok(days
         .into_par_iter()
@@ -85,6 +100,7 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
             target.push(&bin);
 
             let res = std::process::Command::new(target).current_dir(&pb).output();
+            progress.inc(1);
             res.map_err(|_| day).err()
         })
         .collect())
@@ -109,6 +125,7 @@ fn run_day(
     cargo_folder: PathBuf,
     day: (PathBuf, u32),
     number_of_runs: usize,
+    progress: ProgressBar,
 ) -> Result<(usize, Option<usize>), AocError>
 {
     let bin = format!("day_{:02}", day.1);
@@ -126,6 +143,7 @@ fn run_day(
         {
             return Err(AocError::RunError(format!("Error running day {}", day.1)));
         }
+        progress.inc(1);
         vec.push(parse_get_times(res)?);
     }
 
@@ -149,13 +167,25 @@ async fn run_days(
 ) -> Result<Vec<(u32, (usize, Option<usize>))>, AocError>
 {
     let cargo_folder = cargo_path().await?;
+    let multi = MultiProgress::new();
+    let sty = ProgressStyle::with_template(
+        "[{elapsed_precise}] {msg}... {bar:40.cyan/blue} {pos:>7}/{len:7}",
+    )
+    .unwrap()
+    .progress_chars("##-");
+
+
     Ok(days
         .into_par_iter()
         .map(|day| {
             let cargo_folder = cargo_folder.clone();
             let d = day.1;
 
-            let res = run_day(cargo_folder, day, number_of_runs).expect("Running day");
+            let progress = multi.add(ProgressBar::new(number_of_runs as u64));
+            progress.set_style(sty.clone());
+            progress.set_message(format!("Running day {}", d));
+
+            let res = run_day(cargo_folder, day, number_of_runs, progress).expect("Running day");
             (d, res)
         })
         .collect())
