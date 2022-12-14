@@ -1,5 +1,8 @@
+use std::process::Stdio;
+
 use chrono::prelude::*;
 use clap::ArgMatches;
+use tokio::io::{AsyncBufReadExt, BufReader};
 
 use crate::{
     error::AocError,
@@ -43,23 +46,25 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     let input = get_input_file(matches);
     let flags = matches.get_one::<String>("compiler-flags").ok_or(AocError::ArgMatches)?;
 
-    let res = tokio::process::Command::new("cargo")
+    let child = tokio::process::Command::new("cargo")
         .args(["run", "--color", "always", "--bin", format!("day_{:02}", day).as_str(), input])
         .env("RUSTFLAGS", flags)
+        .stdout(Stdio::piped())
         .current_dir(dir)
-        .output()
-        .await?;
+        .spawn()?;
 
-    // Print the (potential) errors FIRST so that if we got an answer
-    // it is at the bottom
-    let err = std::str::from_utf8(&res.stderr)?;
-    if !err.is_empty()
+    let stdout = child.stdout.unwrap();
+
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
+
+    let mut out = String::new();
+    while let Ok(Some(line)) = lines.next_line().await
     {
-        println!("{}", err);
+        println!("{}", line);
+        out.push_str(&line);
+        out.push('\n');
     }
-
-    let out = std::str::from_utf8(&res.stdout)?.trim_end();
-    println!("{}", out);
 
     // Only try to submit if the submit flag is passed
     if let Some(submit) = get_submit_day(matches)
@@ -67,7 +72,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
         let year = get_year(matches)?;
         match submit
         {
-            Ok(task) => match submit::submit(out, &task, day, year).await
+            Ok(task) => match submit::submit(&out, &task, day, year).await
             {
                 Ok(output) => println!("Task {}: {}", task, output),
                 Err(e) => println!("Error submitting task {}: {}", task, e),
