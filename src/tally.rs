@@ -61,7 +61,7 @@ async fn days() -> Result<(Vec<(PathBuf, u32)>, Vec<u32>), AocError>
     Ok((have, dont_have))
 }
 
-async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Vec<u32>, AocError>
+fn get_progressbar(len: u64) -> ProgressBar
 {
     let sty = ProgressStyle::with_template(
         "[{elapsed_precise}] {msg}... {bar:40.cyan/blue} {pos:>7}/{len:7}",
@@ -69,14 +69,16 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
     .unwrap()
     .progress_chars("##-");
 
-    let progress = ProgressBar::new(days.len() as u64);
-    progress.set_style(sty);
+    ProgressBar::new(len).with_style(sty)
+}
+
+async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Vec<u32>, AocError>
+{
+    let progress = get_progressbar(days.len() as u64);
     progress.set_message("compiling");
 
     let res: Result<(), AocError> = thread_exec(days, |(_path, day)| {
-        let day = *day;
-        let progress = progress.clone();
-        let bin = format!("day_{:02}", day);
+        let bin = format!("day_{:02}", *day);
         let res = std::process::Command::new("cargo")
             .args(["build", "--release", "--bin", &bin])
             .output()?;
@@ -97,7 +99,6 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
     progress.set_message("verifying days");
 
     let unimpls: Vec<Option<u32>> = thread_exec(days, |(pb, day)| {
-        let pb = pb.clone();
         let day = *day;
         let bin = format!("day_{:02}", day);
         let mut target = cargo_folder.clone();
@@ -105,7 +106,7 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
         target.push(&bin);
         let progress = progress.clone();
 
-        let res = match std::process::Command::new(target).current_dir(&pb).output()
+        let res = match std::process::Command::new(target).current_dir(pb).output()
         {
             Ok(res) =>
             {
@@ -150,9 +151,8 @@ fn run_day(
 
     for _ in 0..number_of_runs
     {
-        let dir = day.0.clone();
-        let target = target.clone();
-        let res = std::process::Command::new(target).current_dir(dir).output()?;
+        let dir = &day.0;
+        let res = std::process::Command::new(&target).current_dir(dir).output()?;
         if !res.status.success()
         {
             return Err(AocError::RunError(format!("Error running day {}", day.1)));
@@ -182,11 +182,6 @@ async fn run_days(
 {
     let cargo_folder = cargo_path().await?;
     let multi = MultiProgress::new();
-    let sty = ProgressStyle::with_template(
-        "[{elapsed_precise}] {msg}... {bar:40.cyan/blue} {pos:>7}/{len:7}",
-    )
-    .unwrap()
-    .progress_chars("##-");
 
     // Sort it to get the progress bars in increasing order
     let mut days = days;
@@ -194,10 +189,7 @@ async fn run_days(
     let days = days
         .into_iter()
         .map(|day| {
-            let sty = sty.clone();
-            let progress = multi.add(ProgressBar::new(number_of_runs as u64));
-
-            progress.set_style(sty);
+            let progress = multi.add(get_progressbar(number_of_runs as u64));
             progress.set_message(format!("Running day {}", day.1));
             (day, progress)
         })
@@ -205,10 +197,9 @@ async fn run_days(
 
     Ok(thread_exec(days, |(day, progress)| {
         let cargo_folder = cargo_folder.clone();
-        let d = day.1;
 
         let res = run_day(cargo_folder, &day, number_of_runs, progress).expect("Running day");
-        (d, res)
+        (day.1, res)
     }))
 }
 
@@ -241,10 +232,10 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
     let print_info = |text: String, vec: Vec<(u32, usize)>| {
         println!("{}", text);
 
-        let mut _vec: Vec<_> = vec.iter().map(|(_, time)| *time).collect();
-        _vec.sort_unstable();
+        let mut data: Vec<_> = vec.iter().map(|(_, time)| *time).collect();
+        data.sort_unstable();
 
-        let median = _vec[_vec.len() / 2];
+        let median = data[data.len() / 2];
 
         let total = vec.iter().map(|(_, time)| time).sum::<usize>();
         let avg = total / vec.len();
@@ -258,11 +249,10 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
         println!();
     };
 
-    let silver = days.iter().cloned().map(|(day, (p1, _))| (day, p1)).collect::<Vec<_>>();
+    let silver = days.iter().map(|(day, (p1, _))| (*day, *p1)).collect::<Vec<_>>();
     let gold = days
         .iter()
-        .cloned()
-        .filter_map(|(day, (_, p2))| p2.map(|p2| (day, p2)))
+        .filter_map(|(day, (_, p2))| p2.map(|p2| (*day, p2)))
         .collect::<Vec<_>>();
 
     let total = gold.iter().chain(silver.iter()).map(|(_, time)| time).sum::<usize>();
