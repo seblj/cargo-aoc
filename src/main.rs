@@ -111,7 +111,7 @@ async fn main() -> Result<(), AocError>
                     "Tallies the  performance of each day and displays information about the \
                      performance",
                 )
-                .arg(Arg::new("runs").long("num-runs").help("Number of runs").default_value("1")),
+                .arg(Arg::new("runs").long("num-runs").help("Number of runs").default_value("10")),
         );
     }
 

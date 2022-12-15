@@ -1,11 +1,36 @@
 use std::{path::PathBuf, process::Output};
 
 use clap::ArgMatches;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use tokio::task::JoinSet;
 
 use crate::{error::AocError, util::file::*};
 
-const TOO_MANY_OPEN_FILES: i32 = 24;
+// Helper function to:
+// 1. iterate over a collection
+// 2. spawn a scoped thread for each item
+// 3. map each item T to a new type U
+// 4. collect the items into some R
+fn thread_exec<T, U, I, F, R>(iter: I, f: F) -> R
+where
+    F: Fn(T) -> U + Send + Clone + Copy,
+    R: FromIterator<U>,
+    U: Send,
+    T: Send,
+    I: IntoIterator<Item = T>,
+{
+    // Collecting the JoinHandles are very important to actually spawn the threads.
+    // Removing the collect results in sequential execution
+    #[allow(clippy::needless_collect)]
+    std::thread::scope(|s| {
+        iter.into_iter()
+            .map(|v| s.spawn(move || f(v)))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|h| h.join().unwrap())
+            .collect::<R>()
+    })
+}
 
 async fn days() -> Result<(Vec<(PathBuf, u32)>, Vec<u32>), AocError>
 {
@@ -33,61 +58,74 @@ async fn days() -> Result<(Vec<(PathBuf, u32)>, Vec<u32>), AocError>
         }
     }
 
-
     Ok((have, dont_have))
 }
 
-async fn build_day(day: u32) -> Result<(), AocError>
+fn get_progressbar(len: u64) -> ProgressBar
 {
-    let bin = format!("day_{:02}", day);
-    let res = tokio::process::Command::new("cargo")
-        .args(["build", "--release", "--bin", &bin])
-        .output()
-        .await?;
+    let sty = ProgressStyle::with_template(
+        "[{elapsed_precise}] {msg}... {bar:40.cyan/blue} {pos:>7}/{len:7}",
+    )
+    .unwrap()
+    .progress_chars("##-");
 
-    if !res.status.success()
-    {
-        Err(AocError::BuildError(bin.to_string()))
-    }
-    else
-    {
-        Ok(())
-    }
+    ProgressBar::new(len).with_style(sty)
 }
 
 async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Vec<u32>, AocError>
 {
-    let mut set = JoinSet::new();
-    for (_path, day) in days.iter()
-    {
-        let day = *day;
-        set.spawn(async move { build_day(day).await });
-    }
+    let progress = get_progressbar(days.len() as u64);
+    progress.set_message("compiling");
 
-    while let Some(Ok(res)) = set.join_next().await
-    {
-        res?;
-    }
+    let res: Result<(), AocError> = thread_exec(days, |(_path, day)| {
+        let bin = format!("day_{:02}", *day);
+        let res = std::process::Command::new("cargo")
+            .args(["build", "--release", "--bin", &bin])
+            .output()?;
 
-    let mut vec = Vec::new();
-    for (pb, day) in days
-    {
-        let pb = pb.clone();
-        let day = *day;
-        if run_day(cargo_folder.clone(), (pb, day), 1).await.is_err()
+        progress.inc(1);
+        if !res.status.success()
         {
-            vec.push(day);
+            Err(AocError::BuildError(bin))
         }
-    }
+        else
+        {
+            Ok(())
+        }
+    });
+    res?;
 
-    Ok(vec)
+    progress.reset();
+    progress.set_message("verifying days");
+
+    let unimpls: Vec<Option<u32>> = thread_exec(days, |(pb, day)| {
+        let day = *day;
+        let bin = format!("day_{:02}", day);
+        let mut target = cargo_folder.clone();
+        target.push("target/release");
+        target.push(&bin);
+        let progress = progress.clone();
+
+        let res = match std::process::Command::new(target).current_dir(pb).output()
+        {
+            Ok(res) =>
+            {
+                // collect all 'unimplemented' days
+                parse_get_times(res).map_err(|_| day).err()
+            },
+            Err(_) => Some(day),
+        };
+        progress.inc(1);
+        res
+    });
+    Ok(unimpls.into_iter().flatten().collect())
 }
 
 fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
 {
     let parse = |line: &str| -> Result<usize, AocError> {
-        let start = line.find('(').ok_or_else(|| AocError::ParseStdout)?;
-        let stop = line.find("ms)").ok_or_else(|| AocError::ParseStdout)?;
+        let start = line.find('(').ok_or(AocError::ParseStdout)?;
+        let stop = line.find("ms)").ok_or(AocError::ParseStdout)?;
         Ok(line[start + 1..stop].parse().unwrap())
     };
     let text = std::str::from_utf8(&output.stdout).unwrap();
@@ -98,62 +136,41 @@ fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
     Ok((p1, p2))
 }
 
-async fn run_day(
+fn run_day(
     cargo_folder: PathBuf,
-    day: (PathBuf, u32),
+    day: &(PathBuf, u32),
     number_of_runs: usize,
+    progress: ProgressBar,
 ) -> Result<(usize, Option<usize>), AocError>
 {
     let bin = format!("day_{:02}", day.1);
     let mut target = cargo_folder;
     target.push("target/release");
     target.push(&bin);
+    let mut vec = Vec::with_capacity(number_of_runs);
 
-    let mut set = JoinSet::new();
     for _ in 0..number_of_runs
     {
-        let dir = day.0.clone();
-        let target = target.clone();
-        set.spawn(
-            async move { tokio::process::Command::new(target).current_dir(dir).output().await },
-        );
-    }
-    let mut vec: Vec<(usize, Option<usize>)> = Vec::new();
-    while let Some(Ok(res)) = set.join_next().await
-    {
-        if let Err(ref e) = res
-        {
-            // Just try again if we have too many files open
-            if e.raw_os_error()
-                .ok_or_else(|| AocError::RunError("Error getting os error".into()))?
-                == TOO_MANY_OPEN_FILES
-            {
-                let dir = day.0.clone();
-                let target = target.clone();
-                set.spawn(async move {
-                    tokio::process::Command::new(target).current_dir(dir).output().await
-                });
-                continue;
-            }
-        }
-
-        let res = res?;
+        let dir = &day.0;
+        let res = std::process::Command::new(&target).current_dir(dir).output()?;
         if !res.status.success()
         {
             return Err(AocError::RunError(format!("Error running day {}", day.1)));
         }
+        progress.inc(1);
         vec.push(parse_get_times(res)?);
     }
 
     let len = vec.len();
-    let (p1, p2) = vec.into_iter().fold((0, Option::<usize>::None), |(p1, p2), (a, b)| {
-        (p1 + a, match (p2, b)
-        {
-            (Some(a), Some(b)) => Some(a + b),
-            (None, Some(b)) => Some(b),
-            _ => None,
-        })
-    });
+    let (p1, p2): (usize, Option<usize>) =
+        vec.into_iter().fold((0, Option::<usize>::None), |(p1, p2), (a, b)| {
+            (p1 + a, match (p2, b)
+            {
+                (Some(a), Some(b)) => Some(a + b),
+                (None, Some(b)) => Some(b),
+                _ => None,
+            })
+        });
 
     Ok((p1 / len, p2.map(|val| val / len)))
 }
@@ -163,21 +180,27 @@ async fn run_days(
     number_of_runs: usize,
 ) -> Result<Vec<(u32, (usize, Option<usize>))>, AocError>
 {
-    let mut set = JoinSet::new();
-    let mut vec: Vec<(u32, (usize, Option<usize>))> = Vec::new();
     let cargo_folder = cargo_path().await?;
-    for day in days
-    {
+    let multi = MultiProgress::new();
+
+    // Sort it to get the progress bars in increasing order
+    let mut days = days;
+    days.sort_unstable_by_key(|k| k.1);
+    let days = days
+        .into_iter()
+        .map(|day| {
+            let progress = multi.add(get_progressbar(number_of_runs as u64));
+            progress.set_message(format!("Running day {}", day.1));
+            (day, progress)
+        })
+        .collect::<Vec<_>>();
+
+    Ok(thread_exec(days, |(day, progress)| {
         let cargo_folder = cargo_folder.clone();
-        set.spawn(async move { (day.1, run_day(cargo_folder, day, number_of_runs).await) });
-    }
 
-    while let Some(Ok((day, res))) = set.join_next().await
-    {
-        vec.push((day, res?));
-    }
-
-    Ok(vec)
+        let res = run_day(cargo_folder, &day, number_of_runs, progress).expect("Running day");
+        (day.1, res)
+    }))
 }
 
 fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, number_of_runs: usize)
@@ -209,10 +232,10 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
     let print_info = |text: String, vec: Vec<(u32, usize)>| {
         println!("{}", text);
 
-        let mut _vec: Vec<_> = vec.iter().map(|(_, time)| *time).collect();
-        _vec.sort_unstable();
+        let mut data: Vec<_> = vec.iter().map(|(_, time)| *time).collect();
+        data.sort_unstable();
 
-        let median = _vec[_vec.len() / 2];
+        let median = data[data.len() / 2];
 
         let total = vec.iter().map(|(_, time)| time).sum::<usize>();
         let avg = total / vec.len();
@@ -226,11 +249,10 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
         println!();
     };
 
-    let silver = days.iter().cloned().map(|(day, (p1, _))| (day, p1)).collect::<Vec<_>>();
+    let silver = days.iter().map(|(day, (p1, _))| (*day, *p1)).collect::<Vec<_>>();
     let gold = days
         .iter()
-        .cloned()
-        .filter_map(|(day, (_, p2))| p2.map(|p2| (day, p2)))
+        .filter_map(|(day, (_, p2))| p2.map(|p2| (*day, p2)))
         .collect::<Vec<_>>();
 
     let total = gold.iter().chain(silver.iter()).map(|(_, time)| time).sum::<usize>();
@@ -250,10 +272,7 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError>
     let unimplementeds = build_days(cargo_folder, &have).await?;
 
     have.retain(|elem| !unimplementeds.contains(&elem.1));
-    for unimpl in unimplementeds
-    {
-        dont.push(unimpl);
-    }
+    dont.extend(unimplementeds);
 
     let mut res = run_days(have, number_of_runs).await?;
     res.sort_unstable_by_key(|v| v.0);
