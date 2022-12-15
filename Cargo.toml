@@ -16,10 +16,10 @@ strip-ansi-escapes = "0.1.1"
 tokio = { version = "1.22.0", features = ["full"] }
 
 criterion = { version = "0.3", optional = true }
-indicatif = "0.17.2"
+indicatif = { version = "0.17.2", optional = true }
 
 
 [features]
 default = ["bench", "tally"]
 bench = ["criterion"]
-tally = []
+tally = ["indicatif"]
