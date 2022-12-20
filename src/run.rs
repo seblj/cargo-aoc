@@ -1,8 +1,8 @@
-use std::process::Stdio;
+use std::io::{BufRead, BufReader};
 
 use chrono::prelude::*;
 use clap::ArgMatches;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use duct::cmd;
 
 use crate::{
     error::AocError,
@@ -46,20 +46,25 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     let input = get_input_file(matches);
     let flags = matches.get_one::<String>("compiler-flags").ok_or(AocError::ArgMatches)?;
 
-    let child = tokio::process::Command::new("cargo")
-        .args(["run", "--color", "always", "--bin", format!("day_{:02}", day).as_str(), input])
-        .env("RUSTFLAGS", flags)
-        .stdout(Stdio::piped())
-        .current_dir(dir)
-        .spawn()?;
+    let reader = cmd!(
+        "cargo",
+        "run",
+        "--color",
+        "always",
+        "--bin",
+        format!("day_{:02}", day).as_str(),
+        input
+    )
+    .dir(dir)
+    .env("RUSTFLAGS", flags)
+    .stderr_to_stdout()
+    .reader()?;
 
-    let stdout = child.stdout.unwrap();
-
-    let reader = BufReader::new(stdout);
+    let reader = BufReader::new(reader);
     let mut lines = reader.lines();
 
     let mut out = String::new();
-    while let Ok(Some(line)) = lines.next_line().await
+    while let Some(Ok(line)) = lines.next()
     {
         println!("{}", line);
         out.push_str(&line);
