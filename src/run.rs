@@ -67,8 +67,11 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     while let Some(Ok(line)) = lines.next()
     {
         println!("{}", line);
-        out.push_str(&line);
-        out.push('\n');
+        if line.contains("ms)\tTask")
+        {
+            out.push_str(&line);
+            out.push('\n');
+        }
     }
 
     // Only try to submit if the submit flag is passed
