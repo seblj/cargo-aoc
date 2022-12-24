@@ -17,6 +17,7 @@ tokio = { version = "1.22.0", features = ["full"] }
 
 criterion = { version = "0.3", optional = true }
 indicatif = { version = "0.17.2", optional = true }
+duct = "0.13.6"
 
 
 [features]
