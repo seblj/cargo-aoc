@@ -4,7 +4,7 @@ use crate::error::AocError;
 
 pub mod file;
 pub mod request;
-pub mod submit;
+#[cfg(feature = "submit")] pub mod submit;
 
 pub fn get_year(matches: &ArgMatches) -> Result<i32, AocError>
 {

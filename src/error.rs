@@ -3,9 +3,11 @@ pub enum AocError
     TokenError,
     ReqwestError(reqwest::Error),
     DownloadError(String),
+    #[cfg(feature = "submit")]
     SanitizeHtml,
     ParseStdout,
     InvalidRunDay,
+    #[cfg(feature = "submit")]
     InvalidSubmitDay,
     InvalidYear,
     ParseIntError,
@@ -41,9 +43,11 @@ macro_rules! impl_print {
                 {
                     AocError::TokenError => write!(f, "Could not find AOC_TOKEN to download input or submit"),
                     AocError::ReqwestError(e) => write!(f, "reqwest error: {}", e),
+                    #[cfg(feature = "submit")]
                     AocError::SanitizeHtml => write!(f, "Error on sanitizing answer"),
                     AocError::ParseStdout => write!(f, "Error on getting answer from task"),
                     AocError::InvalidRunDay => write!(f, "Day must be between 1 and 25"),
+                    #[cfg(feature = "submit")]
                     AocError::InvalidSubmitDay => write!(f, "Can only submit 1 or 2"),
                     AocError::InvalidYear => write!(f, "Year must be between 2015 ..= current year"),
                     AocError::ParseIntError => write!(f, "Error parsing to number"),
