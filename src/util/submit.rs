@@ -46,7 +46,7 @@ fn get_answer(out: &str, task: &Task) -> Option<String>
 {
     let start = out.split(&format!("Task {}: ", task)).nth(1)?;
     let encoded_answer = start.split_once('\n').unwrap_or((start, "")).0;
-    let answer = strip_ansi_escapes::strip(encoded_answer).ok()?;
+    let answer = strip_ansi_escapes::strip(encoded_answer);
     String::from_utf8(answer).ok()
 }
 
