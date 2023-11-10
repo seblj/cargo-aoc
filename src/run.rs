@@ -4,12 +4,12 @@ use chrono::prelude::*;
 use clap::ArgMatches;
 use duct::cmd;
 
+#[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_day};
 use crate::{
     error::AocError,
     util::{
         file::{cargo_path, day_path, download_input_file},
         get_day, get_year,
-        submit::{self, get_submit_day},
     },
 };
 
@@ -75,6 +75,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     }
 
     // Only try to submit if the submit flag is passed
+    #[cfg(feature = "submit")]
     if let Some(submit) = get_submit_day(matches)
     {
         let year = get_year(matches)?;

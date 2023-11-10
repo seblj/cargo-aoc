@@ -75,6 +75,7 @@ async fn main() -> Result<(), AocError>
                         .default_value(std::env::var("RUSTFLAGS").unwrap_or_default())
                         .allow_hyphen_values(true)
                         .help("Flags to send to rustc"),
+                    #[cfg(feature = "submit")]
                     Arg::new("submit")
                         .short('S')
                         .long("submit")

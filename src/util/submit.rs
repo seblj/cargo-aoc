@@ -9,7 +9,9 @@ use crate::error::AocError;
 pub fn get_submit_day(matches: &ArgMatches) -> Option<Result<Task, AocError>>
 {
     let day = matches.get_one::<String>("submit")?;
-    let Ok(day) = day.parse::<u8>() else {
+    let Ok(day) = day.parse::<u8>()
+    else
+    {
         return Some(Err(AocError::ParseIntError));
     };
 

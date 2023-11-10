@@ -2,7 +2,6 @@ use reqwest::{
     header::{COOKIE, USER_AGENT},
     IntoUrl, Response,
 };
-use serde::Serialize;
 
 use crate::error::AocError;
 
@@ -42,10 +41,11 @@ impl AocRequest
         self.request(req).await
     }
 
+    #[cfg(feature = "submit")]
     pub async fn post<T, U>(self, url: U, form: &T) -> Result<Response, AocError>
     where
         U: IntoUrl,
-        T: Serialize + ?Sized,
+        T: serde::Serialize + ?Sized,
     {
         let req = self.client.post(url).form(form);
         self.request(req).await
