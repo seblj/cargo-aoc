@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 pub enum AocError
 {
     TokenError,
@@ -10,6 +11,7 @@ pub enum AocError
     #[cfg(feature = "submit")]
     InvalidSubmitDay,
     InvalidYear,
+    InvalidMonth,
     ParseIntError,
     ArgMatches,
     Utf8Error,
@@ -50,6 +52,7 @@ macro_rules! impl_print {
                     #[cfg(feature = "submit")]
                     AocError::InvalidSubmitDay => write!(f, "Can only submit 1 or 2"),
                     AocError::InvalidYear => write!(f, "Year must be between 2015 ..= current year"),
+                    AocError::InvalidMonth => write!(f, "I's {}, but its not yet december!", Utc::now().year()),
                     AocError::ParseIntError => write!(f, "Error parsing to number"),
                     AocError::ArgMatches => write!(f, "Error on getting argument"),
                     AocError::StdIoErr(e) => write!(f, "{}", e),

@@ -36,10 +36,16 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
         let year = get_year(matches)?;
         let current_year = Utc::now().year();
         let current_month = Utc::now().month();
-        if year < 2015 || year > current_year || (year == current_year && current_month < 12)
+
+        if year < 2015 || year > current_year
         {
             return Err(AocError::InvalidYear);
         }
+        if year == current_year && current_month < 12
+        {
+            return Err(AocError::InvalidMonth);
+        }
+
         download_input_file(day, year, &dir).await?;
     }
 
