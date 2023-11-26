@@ -82,18 +82,11 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     // Only try to submit if the submit flag is passed
     #[cfg(feature = "submit")]
-    if let Some(submit) = get_submit_task(matches)
+    if let Some(task) = get_submit_task(matches).transpose()?
     {
         let year = get_year(matches)?;
-        match submit
-        {
-            Ok(task) => match submit::submit(&out, &task, day, year).await
-            {
-                Ok(output) => println!("Task {}: {}", task, output),
-                Err(e) => println!("Error submitting task {}: {}", task, e),
-            },
-            Err(e) => println!("Error: {}", e),
-        }
+        let output = submit::submit(&out, task, day, year).await?;
+        println!("Task {}: {}", task, output);
     }
     Ok(())
 }
