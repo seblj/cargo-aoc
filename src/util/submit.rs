@@ -6,20 +6,18 @@ use sanitize_html::rules::predefined::DEFAULT;
 use super::request::AocRequest;
 use crate::error::AocError;
 
-pub fn get_submit_day(matches: &ArgMatches) -> Option<Result<Task, AocError>>
+pub fn get_submit_task(matches: &ArgMatches) -> Option<Result<Task, AocError>>
 {
-    let day = matches.get_one::<String>("submit")?.parse::<u8>();
-    if let Err(e) = day
+    let task = matches.get_one::<String>("submit")?.parse::<u8>();
+    if let Err(e) = task
     {
         return Some(Err(e.into()));
     }
-    let day = day.unwrap();
-
-    match day
+    match task.unwrap()
     {
         1 => Some(Ok(Task::One)),
         2 => Some(Ok(Task::Two)),
-        _ => Some(Err(AocError::InvalidSubmitDay)),
+        _ => Some(Err(AocError::InvalidSubmitTask)),
     }
 }
 

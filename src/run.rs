@@ -4,7 +4,7 @@ use chrono::prelude::*;
 use clap::ArgMatches;
 use duct::cmd;
 
-#[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_day};
+#[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_task};
 use crate::{
     error::AocError,
     util::{
@@ -82,7 +82,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     // Only try to submit if the submit flag is passed
     #[cfg(feature = "submit")]
-    if let Some(submit) = get_submit_day(matches)
+    if let Some(submit) = get_submit_task(matches)
     {
         let year = get_year(matches)?;
         match submit

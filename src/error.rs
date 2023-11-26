@@ -24,7 +24,7 @@ pub enum AocError
 
     #[cfg(feature = "submit")]
     #[error("Can only submit task 1 or 2")]
-    InvalidSubmitDay,
+    InvalidSubmitTask,
 
     #[error("Year must be between 2015 ..= current year")]
     InvalidYear,
