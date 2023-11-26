@@ -69,7 +69,5 @@ pub async fn submit(output: &str, task: &Task, day: u32, year: i32) -> Result<St
     let res = AocRequest::new().post(&url, &form).await?;
 
     let text = &res.text().await?;
-    let parsed_output = parse_and_sanitize_output(text).ok_or(AocError::SanitizeHtml)?;
-
-    Ok(parsed_output)
+    parse_and_sanitize_output(text).ok_or(AocError::SanitizeHtml)
 }
