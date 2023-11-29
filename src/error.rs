@@ -43,6 +43,7 @@ pub enum AocError
     #[error("stdio error {0}")]
     StdIoErr(#[from] std::io::Error),
 
+    #[cfg(feature = "bench")]
     #[error("argument error {0}")]
     ArgError(String),
 
