@@ -4,7 +4,7 @@ use chrono::prelude::*;
 use clap::ArgMatches;
 use duct::cmd;
 
-#[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_day};
+#[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_task};
 use crate::{
     error::AocError,
     util::{
@@ -36,10 +36,16 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
         let year = get_year(matches)?;
         let current_year = Utc::now().year();
         let current_month = Utc::now().month();
-        if year < 2015 || year > current_year || (year == current_year && current_month < 12)
+
+        if year < 2015 || year > current_year
         {
             return Err(AocError::InvalidYear);
         }
+        if year == current_year && current_month < 12
+        {
+            return Err(AocError::InvalidMonth);
+        }
+
         download_input_file(day, year, &dir).await?;
     }
 
@@ -76,18 +82,11 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     // Only try to submit if the submit flag is passed
     #[cfg(feature = "submit")]
-    if let Some(submit) = get_submit_day(matches)
+    if let Some(task) = get_submit_task(matches).transpose()?
     {
         let year = get_year(matches)?;
-        match submit
-        {
-            Ok(task) => match submit::submit(&out, &task, day, year).await
-            {
-                Ok(output) => println!("Task {}: {}", task, output),
-                Err(e) => println!("Error submitting task {}: {}", task, e),
-            },
-            Err(e) => println!("Error: {}", e),
-        }
+        let output = submit::submit(&out, task, day, year).await?;
+        println!("Task {}: {}", task, output);
     }
     Ok(())
 }

@@ -1,75 +1,56 @@
+use thiserror::Error;
+
+#[derive(Error, Debug)]
 pub enum AocError
 {
-    TokenError,
-    ReqwestError(reqwest::Error),
+    #[error("Could not find AOC_TOKEN to download input or submit")]
+    TokenError(#[from] dotenv::Error),
+
+    #[error("reqwest error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+
+    #[error("download error: {0}")]
     DownloadError(String),
+
     #[cfg(feature = "submit")]
+    #[error("Error on sanitizing answer")]
     SanitizeHtml,
+
+    #[error("Error on getting answer from task")]
     ParseStdout,
+
+    #[error("Day must be between 1 and 25")]
     InvalidRunDay,
+
     #[cfg(feature = "submit")]
-    InvalidSubmitDay,
+    #[error("Can only submit task 1 or 2")]
+    InvalidSubmitTask,
+
+    #[error("Year must be between 2015 ..= current year")]
     InvalidYear,
-    ParseIntError,
+    #[error("Its not yet december for this year's puzzles!")]
+    InvalidMonth,
+
+    #[error("Error parsing to number")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Error on getting argument")]
     ArgMatches,
-    Utf8Error,
-    StdIoErr(std::io::Error),
+
+    #[error("Error on parsing to utf-8")]
+    Utf8Error(#[from] std::str::Utf8Error),
+
+    #[error("stdio error {0}")]
+    StdIoErr(#[from] std::io::Error),
+
+    #[error("argument error {0}")]
     ArgError(String),
+
     #[cfg(feature = "tally")]
+    #[error("{0}")]
     BuildError(String),
+
     #[cfg(feature = "tally")]
+    #[error("{0}")]
     RunError(String),
 }
-
-macro_rules! impl_from_helper {
-    ($from:ty, $to: expr) => {
-        impl From<$from> for AocError
-        {
-            fn from(e: $from) -> Self
-            {
-                $to(e)
-            }
-        }
-    };
-}
-
-macro_rules! impl_print {
-    ($($from: ty),*) => {$(
-        impl $from for AocError
-        {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
-            {
-                match self
-                {
-                    AocError::TokenError => write!(f, "Could not find AOC_TOKEN to download input or submit"),
-                    AocError::ReqwestError(e) => write!(f, "reqwest error: {}", e),
-                    #[cfg(feature = "submit")]
-                    AocError::SanitizeHtml => write!(f, "Error on sanitizing answer"),
-                    AocError::ParseStdout => write!(f, "Error on getting answer from task"),
-                    AocError::InvalidRunDay => write!(f, "Day must be between 1 and 25"),
-                    #[cfg(feature = "submit")]
-                    AocError::InvalidSubmitDay => write!(f, "Can only submit 1 or 2"),
-                    AocError::InvalidYear => write!(f, "Year must be between 2015 ..= current year"),
-                    AocError::ParseIntError => write!(f, "Error parsing to number"),
-                    AocError::ArgMatches => write!(f, "Error on getting argument"),
-                    AocError::StdIoErr(e) => write!(f, "{}", e),
-                    AocError::DownloadError(e) => write!(f, "{}", e),
-                    AocError::Utf8Error => write!(f, "Error on parsing to utf-8"),
-                    AocError::ArgError(e) => write!(f, "{}", e),
-                    #[cfg(feature = "tally")]
-                    AocError::BuildError(e) => write!(f, "{}", e),
-                    #[cfg(feature = "tally")]
-                    AocError::RunError(e) => write!(f, "{}", e),
-                }
-            }
-        }
-    )*}
-}
-
-impl_from_helper!(dotenv::Error, |_| AocError::TokenError);
-impl_from_helper!(std::num::ParseIntError, |_| AocError::ParseIntError);
-impl_from_helper!(std::str::Utf8Error, |_| AocError::Utf8Error);
-impl_from_helper!(std::io::Error, |e| Self::StdIoErr(e));
-impl_from_helper!(reqwest::Error, |e| Self::ReqwestError(e));
-
-impl_print!(std::fmt::Display, std::fmt::Debug);

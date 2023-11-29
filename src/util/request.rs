@@ -28,8 +28,9 @@ impl AocRequest
 
     async fn request(self, req: reqwest::RequestBuilder) -> Result<Response, AocError>
     {
+        let token = self.get_token()?.replace("session=", "");
         Ok(req
-            .header(COOKIE, format!("session={}", self.get_token()?))
+            .header(COOKIE, format!("session={}", token))
             .header(USER_AGENT, AocRequest::AOC_USER_AGENT)
             .send()
             .await?)

@@ -6,24 +6,22 @@ use sanitize_html::rules::predefined::DEFAULT;
 use super::request::AocRequest;
 use crate::error::AocError;
 
-pub fn get_submit_day(matches: &ArgMatches) -> Option<Result<Task, AocError>>
+pub fn get_submit_task(matches: &ArgMatches) -> Option<Result<Task, AocError>>
 {
-    let day = matches.get_one::<String>("submit")?;
-    let Ok(day) = day.parse::<u8>()
-    else
+    let task = matches.get_one::<String>("submit")?.parse::<u8>();
+    if let Err(e) = task
     {
-        return Some(Err(AocError::ParseIntError));
-    };
-
-    match day
+        return Some(Err(e.into()));
+    }
+    match task.unwrap()
     {
         1 => Some(Ok(Task::One)),
         2 => Some(Ok(Task::Two)),
-        _ => Some(Err(AocError::InvalidSubmitDay)),
+        _ => Some(Err(AocError::InvalidSubmitTask)),
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub enum Task
 {
     One,
@@ -42,7 +40,7 @@ impl std::fmt::Display for Task
     }
 }
 
-fn get_answer(out: &str, task: &Task) -> Option<String>
+fn get_answer(out: &str, task: Task) -> Option<String>
 {
     let start = out.split(&format!("Task {}: ", task)).nth(1)?;
     let encoded_answer = start.split_once('\n').unwrap_or((start, "")).0;
@@ -58,18 +56,16 @@ fn parse_and_sanitize_output(output: &str) -> Option<String>
     sanitize_html::sanitize_str(&DEFAULT, body).ok()
 }
 
-pub async fn submit(output: &str, task: &Task, day: u32, year: i32) -> Result<String, AocError>
+pub async fn submit(output: &str, task: Task, day: u32, year: i32) -> Result<String, AocError>
 {
     let answer = get_answer(output, task).ok_or(AocError::ParseStdout)?;
     let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
 
     let mut form = HashMap::new();
-    form.insert("level", if task == &Task::One { 1 } else { 2 }.to_string());
+    form.insert("level", if task == Task::One { 1 } else { 2 }.to_string());
     form.insert("answer", answer);
     let res = AocRequest::new().post(&url, &form).await?;
 
     let text = &res.text().await?;
-    let parsed_output = parse_and_sanitize_output(text).ok_or(AocError::SanitizeHtml)?;
-
-    Ok(parsed_output)
+    parse_and_sanitize_output(text).ok_or(AocError::SanitizeHtml)
 }
