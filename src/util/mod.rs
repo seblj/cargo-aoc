@@ -31,3 +31,16 @@ pub fn get_day(matches: &ArgMatches) -> Result<u32, AocError>
         Ok(day)
     }
 }
+
+pub fn get_time_symbol() -> String
+{
+    let sym = std::env::var("TASKUNIT").unwrap_or("ms".to_owned());
+    if sym == "us"
+    {
+        "μs".to_owned()
+    }
+    else
+    {
+        sym
+    }
+}

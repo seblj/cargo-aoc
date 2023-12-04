@@ -4,7 +4,10 @@ use clap::ArgMatches;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use tokio::task::JoinSet;
 
-use crate::{error::AocError, util::file::*};
+use crate::{
+    error::AocError,
+    util::{file::*, get_time_symbol},
+};
 
 // Helper function to:
 // 1. iterate over a collection
@@ -123,9 +126,10 @@ async fn build_days(cargo_folder: PathBuf, days: &[(PathBuf, u32)]) -> Result<Ve
 
 fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError>
 {
+    let unit = get_time_symbol();
     let parse = |line: &str| -> Result<usize, AocError> {
         let start = line.find('(').ok_or(AocError::ParseStdout)?;
-        let stop = line.find("ms)").ok_or(AocError::ParseStdout)?;
+        let stop = line.find(&format!("{unit})")).ok_or(AocError::ParseStdout)?;
         Ok(line[start + 1..stop].parse().unwrap())
     };
     let text = std::str::from_utf8(&output.stdout).unwrap();
@@ -152,7 +156,10 @@ fn run_day(
     for _ in 0..number_of_runs
     {
         let dir = &day.0;
-        let res = std::process::Command::new(&target).current_dir(dir).output()?;
+        let res = std::process::Command::new(&target)
+            .current_dir(dir)
+            .envs(std::env::vars())
+            .output()?;
         if !res.status.success()
         {
             return Err(AocError::RunError(format!("Error running day {}", day.1)));
@@ -205,6 +212,7 @@ async fn run_days(
 
 fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, number_of_runs: usize)
 {
+    let unit = get_time_symbol();
     let red_text = |s: u32| format!("\x1b[0;33;31m{}\x1b[0m", s);
     let gold_text = |s: &str| format!("\x1b[0;33;10m{}\x1b[0m:", s);
     let silver_text = |s: &str| format!("\x1b[0;34;34m{}\x1b[0m:", s);
@@ -242,10 +250,10 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
 
         let (highest_day, highest_time) = vec.iter().max_by_key(|k| k.1).unwrap();
 
-        println!("\t Total time:  \t{}ms", total);
-        println!("\t Average time:\t{}ms", avg);
-        println!("\t Median time: \t{}ms", median);
-        println!("\t Highest time:\t{}ms, day: {}", highest_time, highest_day);
+        println!("\t Total time:  \t{}{unit}", total);
+        println!("\t Average time:\t{}{unit}", avg);
+        println!("\t Median time: \t{}{unit}", median);
+        println!("\t Highest time:\t{}{unit}, day: {}", highest_time, highest_day);
         println!();
     };
 
@@ -259,7 +267,8 @@ fn print_info(days: Vec<(u32, (usize, Option<usize>))>, not_done: Vec<u32>, numb
 
     print_info(silver_text("Silver"), silver);
     print_info(gold_text("Gold"), gold);
-    println!("\nTOTAL TIME: {}ms", total);
+    let unit = get_time_symbol();
+    println!("\nTOTAL TIME: {}{unit}", total);
 }
 
 pub async fn tally(matches: &ArgMatches) -> Result<(), AocError>

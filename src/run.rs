@@ -9,7 +9,7 @@ use crate::{
     error::AocError,
     util::{
         file::{cargo_path, day_path, download_input_file},
-        get_day, get_year,
+        get_day, get_time_symbol, get_year,
     },
 };
 
@@ -70,10 +70,11 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     let mut lines = reader.lines();
 
     let mut out = String::new();
+    let unit = get_time_symbol();
     while let Some(Ok(line)) = lines.next()
     {
         println!("{}", line);
-        if line.contains("ms)\tTask")
+        if line.contains(&format!("{unit})\tTask"))
         {
             out.push_str(&line);
             out.push('\n');
