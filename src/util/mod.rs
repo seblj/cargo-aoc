@@ -4,12 +4,12 @@ use std::{
 };
 
 use clap::ArgMatches;
+use sanitize_html::rules::predefined::DEFAULT;
 
 use self::{
     file::{cargo_path, day_path},
     request::AocRequest,
 };
-use crate::error::AocError;
 
 pub mod file;
 pub mod request;
