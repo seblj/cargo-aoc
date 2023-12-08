@@ -123,7 +123,18 @@ async fn main() -> Result<(), AocError>
                      performance",
                 )
                 .arg(Arg::new("runs").long("num-runs").help("Number of runs").default_value("10"))
-                .arg(Arg::new("year").short('y').default_value(chrono::Utc::now().year().to_string()))
+                .arg(
+                    Arg::new("year")
+                        .short('y')
+                        .default_value(chrono::Utc::now().year().to_string()),
+                )
+                .arg(
+                    Arg::new("table")
+                        .long("table")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Display day info in a nice table"),
+                ),
         );
     }
 

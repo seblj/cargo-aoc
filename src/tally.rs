@@ -369,14 +369,100 @@ fn run_days(
     }))
 }
 
+fn display_table(matches: &ArgMatches) -> bool
+{
+    matches.get_flag("table")
+}
+
+fn format_duration(duration: usize) -> String
+{
+    let unit = get_time_symbol();
+    format!("{}{}", duration, unit)
+}
+
+fn print_table(days: Vec<BuildRes>)
+{
+    let max_name_len = days.iter().map(|br| br.info.title.len()).max().unwrap();
+    let max_part1_len = days.iter().map(|br| br.info.ans1.as_ref().unwrap().len()).max().unwrap();
+    let max_part2_len = days.iter().map(|br| br.info.ans2.as_ref().unwrap().len()).max().unwrap();
+
+    let max_part1_time_len = days.iter().map(|br| format_duration(br.time.0).len()).max().unwrap();
+    let max_part2_time_len = days
+        .iter()
+        .map(|br| br.time.1.map(|t| format_duration(t)).unwrap_or("NA".to_string()).len())
+        .max()
+        .unwrap();
+
+
+    let part1_header_len = max_part1_len + 8 + max_part1_time_len;
+    let part2_header_len = max_part2_len + 8 + max_part2_time_len;
+
+    let max_total_len = max_name_len + part1_header_len + part2_header_len + 3;
+
+    println!("╔{}╗", "═".repeat(max_total_len + 5));
+    println!("║ {:^max_total_len$}  ║", "🦀 Advent of Code 2023 🦀");
+    println!(
+        "╠{}╦{}╦{}╣",
+        "═".repeat(max_name_len + 2),
+        "═".repeat(part1_header_len + 2),
+        "═".repeat(part2_header_len + 2),
+    );
+    println!(
+        "║ {:max_name_len$} ║ {:part1_header_len$} ║ {:part2_header_len$} ║",
+        "Day", "Part 1", "Part 2"
+    );
+    println!(
+        "╠{}╬{}╦{}╦{}╬{}╦{}╦{}╣",
+        "═".repeat(max_name_len + 2),
+        "═".repeat(max_part1_len + 2),
+        "═".repeat(max_part1_time_len + 2),
+        "═".repeat(4),
+        "═".repeat(max_part2_len + 2),
+        "═".repeat(max_part2_time_len + 2),
+        "═".repeat(4),
+    );
+
+    for day in days
+    {
+        let part1_symbol = if day.info.correct1 { "✅" } else { "❌" };
+        let part2_symbol = if day.info.correct2 { "✅" } else { "❌" };
+
+        println!(
+            "║ {:max_name_len$} ║ {:max_part1_len$} ║ {:max_part1_time_len$} ║ {} ║ \
+             {:max_part2_len$} ║ {:max_part2_time_len$} ║ {} ║ ",
+            day.info.title,
+            day.info.ans1.unwrap(),
+            format_duration(day.time.0),
+            part1_symbol,
+            day.info.ans2.unwrap(),
+            day.time.1.map(|t| format_duration(t)).unwrap_or("NA".to_string()),
+            part2_symbol,
+        );
+    }
+    println!(
+        "╚{}╩{}╩{}╩{}╩{}╩{}╩{}╝",
+        "═".repeat(max_name_len + 2),
+        "═".repeat(max_part1_len + 2),
+        "═".repeat(max_part1_time_len + 2),
+        "═".repeat(4),
+        "═".repeat(max_part2_len + 2),
+        "═".repeat(max_part2_time_len + 2),
+        "═".repeat(4),
+    );
+}
+
+
 pub async fn tally(matches: &ArgMatches) -> Result<(), AocError>
 {
     let number_of_runs = get_number_of_runs(&matches)?;
+    let display_table = display_table(&matches);
+
     let cargo_folder = cargo_path().await?;
     let year = get_year(&matches)?;
     let possible_days = get_possible_days(year)?;
     let days =
-        compile_and_verify_days(possible_days.clone(), cargo_folder.clone(), year, true).await;
+        compile_and_verify_days(possible_days.clone(), cargo_folder.clone(), year, display_table)
+            .await;
 
     let days = run_days(days, cargo_folder, number_of_runs)?;
 
@@ -385,9 +471,16 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError>
         .filter(|day| !days.iter().any(|br| br.day == *day))
         .collect();
 
-    let have = days.into_iter().map(|br| (br.day, (br.time.0, br.time.1))).collect();
 
-    print_info(have, dont_have, number_of_runs);
+    if display_table
+    {
+        print_table(days);
+    }
+    else
+    {
+        let have = days.into_iter().map(|br| (br.day, (br.time.0, br.time.1))).collect();
+        print_info(have, dont_have, number_of_runs);
+    }
 
 
     Ok(())
