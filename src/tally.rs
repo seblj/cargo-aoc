@@ -247,8 +247,13 @@ async fn verify_day(
     let progress = progress.clone();
 
     let res = Command::new(target).current_dir(&day_path).output().ok()?;
-    let mut br = BuildRes::new(day, day_path);
+    if !res.status.success()
+    {
+        return None;
+    }
 
+
+    let mut br = BuildRes::new(day, day_path);
     let res = if table_display
     {
         let (_t1, _t2) = parse_get_answers(res);
