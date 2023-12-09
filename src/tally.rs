@@ -247,16 +247,16 @@ async fn verify_day(
     let progress = progress.clone();
 
     let res = Command::new(target).current_dir(&day_path).output().ok()?;
-    if !res.status.success()
+
+    let (_t1, _t2) = parse_get_answers(res);
+    if _t1.is_none() && _t2.is_none()
     {
         return None;
     }
 
-
     let mut br = BuildRes::new(day, day_path);
     let res = if table_display
     {
-        let (_t1, _t2) = parse_get_answers(res);
         get_day_title_and_answers(day as u32, year as u32).await.ok().map(
             |(title, task1, task2)| {
                 br.info.title = title;
@@ -295,7 +295,6 @@ async fn compile_and_verify_days(
         build_day(day, path, &progress)
     });
 
-
     progress.reset();
     progress.set_message("verifying");
 
@@ -325,10 +324,6 @@ fn run_day(
     {
         let res = Command::new(&target).current_dir(&day_folder).envs(std::env::vars()).output()?;
 
-        if !res.status.success()
-        {
-            return Err(AocError::RunError(format!("Error running day {}", day)));
-        }
         progress.inc(1);
         vec.push(parse_get_times(res)?);
     }

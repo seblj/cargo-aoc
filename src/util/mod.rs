@@ -107,7 +107,8 @@ pub async fn get_day_title_and_answers(day: u32, year: u32) -> Result<AocInfo, A
     let h2 = "<h2>--- ";
     let idx1 = text.find(h2).unwrap() + h2.len();
     let idx2 = text[idx1..].find(" ---</h2>").unwrap();
-    let (_, title) = text[idx1..idx1 + idx2].split_once(": ").unwrap();
+    //let (_, title) = text[idx1..idx1 + idx2].split_once(": ").unwrap();
+    let title = text[idx1..idx1 + idx2].to_string();
 
     let search = "Your puzzle answer was <code>";
     let mut iter = text.lines().filter(|&line| line.contains(search)).map(|line| {
