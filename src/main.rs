@@ -15,7 +15,7 @@ async fn main() -> Result<(), AocError>
 {
     dotenv::dotenv().ok();
     let mut cmd = Command::new("cargo-aoc")
-        .author("Sebastian, seblyng98@gmail.com")
+        .author("Sebastian, sebastian@lyngjohansen.com")
         .author("Sivert, sivert-joh@hotmail.com")
         .arg(Arg::new("dummy").hide(true))
         .subcommand(
