@@ -6,6 +6,7 @@ use duct::cmd;
 
 #[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_task};
 use crate::{
+    assert::assert_answer,
     error::AocError,
     util::{
         file::{cargo_path, day_path, download_input_file},
@@ -79,6 +80,12 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
             out.push_str(&line);
             out.push('\n');
         }
+    }
+
+    if matches.get_flag("assert")
+    {
+        let year = get_year(matches)?;
+        assert_answer(&out, day, year).await?;
     }
 
     // Only try to submit if the submit flag is passed

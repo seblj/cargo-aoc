@@ -1,6 +1,7 @@
 use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
 use error::AocError;
+mod assert;
 #[cfg(feature = "bench")] mod bench;
 mod clippy;
 mod error;
@@ -68,6 +69,12 @@ async fn main() -> Result<(), AocError>
                         .required(false)
                         .action(clap::ArgAction::SetTrue)
                         .help("Run the day with the \"test\" file"),
+                    Arg::new("assert")
+                        .short('a') // TODO: Should we have a short flag? If so, is `a` ok?
+                        .long("assert")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Asserts that the answers are still correct after submitting"),
                     Arg::new("compiler-flags")
                         .short('C')
                         .long("compiler-flags")
