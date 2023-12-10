@@ -3,7 +3,7 @@ use crate::{
     util::{get_day_title_and_answers, parse_get_answers, Task},
 };
 
-pub fn assert_print(expected: &str, actual: &str, task: Task)
+fn assert_print_equal(expected: &str, actual: &str, task: Task)
 {
     if expected == actual
     {
@@ -20,6 +20,15 @@ pub fn assert_print(expected: &str, actual: &str, task: Task)
     }
 }
 
+fn assert_print_fail(s: &str, task: Task)
+{
+    println!(
+        "Task {}: \x1b[0;31mFAILED\x1b[0m
+    `{}`",
+        task, s
+    )
+}
+
 pub async fn assert_answer(out: &str, day: u32, year: i32) -> Result<(), AocError>
 {
     let info = get_day_title_and_answers(day, year as u32).await?;
@@ -29,33 +38,49 @@ pub async fn assert_answer(out: &str, day: u32, year: i32) -> Result<(), AocErro
     {
         (Some(p1), Some(p2), Some(a1), Some(a2)) =>
         {
-            assert_print(&a1, &p1, Task::One);
-            assert_print(&a2, &p2, Task::Two);
+            assert_print_equal(&a1, &p1, Task::One);
+            assert_print_equal(&a2, &p2, Task::Two);
         },
-        (Some(p1), None, Some(a1), Some(_)) =>
+        (Some(p1), None, Some(a1), Some(a2)) =>
         {
-            assert_print(&a1, &p1, Task::One);
-            println!("Couldn't verify answer for part 2");
+            assert_print_equal(&a1, &p1, Task::One);
+            assert_print_fail(
+                &format!("Couldn't verify answer against the correct one: {}", a2),
+                Task::Two,
+            );
+        },
+        (None, Some(p2), Some(a1), Some(a2)) =>
+        {
+            assert_print_fail(
+                &format!("Couldn't verify answer against the correct one: {}", a1),
+                Task::One,
+            );
+            assert_print_equal(&a2, &p2, Task::Two);
         },
         (Some(p1), _, Some(a1), None) =>
         {
-            assert_print(&a1, &p1, Task::One);
-            println!("You haven't completed part 2");
+            assert_print_equal(&a1, &p1, Task::One);
+            assert_print_fail("Have you completed it?", Task::Two);
         },
-        (None, Some(p2), Some(_), Some(a2)) =>
+        (None, Some(_), Some(a1), None) =>
         {
-            println!("Couldn't verify answer for part 1");
-            assert_print(&a2, &p2, Task::Two);
+            assert_print_fail(
+                &format!("Couldn't verify answer against the correct one: {}", a1),
+                Task::One,
+            );
+            assert_print_fail("Coulnd't find the submitted answer", Task::Two);
         },
-        (None, None, ..) => println!("You haven't completed the day yet..."),
-
-        // Assumes that it is impossible for it to _not_ find the submitted answer for part 1, but
-        // then find the submitted answer for part 2
-        (_, _, None, _) => println!("Coulnd't find the submitted answers..."),
-
-        (None, Some(_), Some(_), None) => println!(
-            "Only found answer for part 2, but could only find submitted answer for part 1"
-        ),
+        (None, None, _, _) =>
+        {
+            assert_print_fail("Have you completed it?", Task::One);
+            assert_print_fail("Have you completed it?", Task::Two);
+        },
+        // Assumes that it is impossible to get answer for part 2 if we don't get answer for part 1
+        (_, _, None, _) =>
+        {
+            assert_print_fail("Coulnd't find the submitted answer", Task::One);
+            assert_print_fail("Coulnd't find the submitted answer", Task::Two);
+        },
     }
 
     Ok(())
