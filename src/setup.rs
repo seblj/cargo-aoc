@@ -7,6 +7,11 @@ use crate::error::AocError;
 
 async fn setup_template_project(year: i32) -> Result<(), AocError>
 {
+    if Path::new(&format!("{year}")).exists()
+    {
+        return Err(AocError::SetupExists);
+    }
+
     let res = tokio::process::Command::new("cargo")
         .args(["new", &format!("year_{}", year)])
         .output()
