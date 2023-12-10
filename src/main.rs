@@ -58,11 +58,6 @@ async fn main() -> Result<(), AocError>
                         .required(false)
                         .default_value(OsStr::from(chrono::Utc::now().day().to_string()))
                         .help("Day to run"),
-                    Arg::new("year")
-                        .short('y')
-                        .required(false)
-                        .default_value(OsStr::from(chrono::Utc::now().year().to_string()))
-                        .help("Year for automatic download of input if not present"),
                     Arg::new("test")
                         .short('t')
                         .long("test")

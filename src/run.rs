@@ -10,7 +10,7 @@ use crate::{
     error::AocError,
     util::{
         file::{cargo_path, day_path, download_input_file},
-        get_day, get_time_symbol, get_year,
+        get_day, get_time_symbol, get_year_from_root,
     },
 };
 
@@ -34,7 +34,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     if !dir.join("input").exists()
     {
-        let year = get_year(matches)?;
+        let year = get_year_from_root().await?;
         let current_year = Utc::now().year();
         let current_month = Utc::now().month();
 
@@ -84,7 +84,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     if matches.get_flag("assert")
     {
-        let year = get_year(matches)?;
+        let year = get_year_from_root().await?;
         assert_answer(&out, day, year).await?;
     }
 
@@ -92,7 +92,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     #[cfg(feature = "submit")]
     if let Some(task) = get_submit_task(matches).transpose()?
     {
-        let year = get_year(matches)?;
+        let year = get_year_from_root().await?;
         let output = submit::submit(&out, task, day, year).await?;
         println!("Task {}: {}", task, output);
     }
