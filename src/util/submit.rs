@@ -32,9 +32,7 @@ fn parse_and_sanitize_output(output: &str) -> Option<String>
 pub async fn submit(output: &str, task: Task, day: u32, year: i32) -> Result<String, AocError>
 {
     let (p1, p2) = parse_get_answers(output);
-    // TODO: I don't know what I should do here if the answer is not found
-    let answer = if task == Task::One { p1 } else { p2 }
-        .unwrap_or_else(|| panic!("Can't find the answer for part {}", task));
+    let answer = if task == Task::One { p1 } else { p2 }.ok_or(AocError::ParseStdout)?;
     let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
 
     let mut form = HashMap::new();
