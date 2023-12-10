@@ -70,7 +70,7 @@ async fn main() -> Result<(), AocError>
                         .action(clap::ArgAction::SetTrue)
                         .help("Run the day with the \"test\" file"),
                     Arg::new("assert")
-                        .short('a') // TODO: Should we have a short flag? If so, is `a` ok?
+                        .short('a')
                         .long("assert")
                         .required(false)
                         .action(clap::ArgAction::SetTrue)
