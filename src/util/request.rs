@@ -12,7 +12,8 @@ pub struct AocRequest
 
 impl AocRequest
 {
-    const AOC_USER_AGENT: &str = "github.com/seblj/cargo-aoc by seblyng98@gmail.com";
+    const AOC_USER_AGENT: &str =
+        "github.com/seblj/cargo-aoc by sebastian@lyngjohansen.com and sivert-joh@hotmail.com";
 
     pub fn new() -> AocRequest
     {

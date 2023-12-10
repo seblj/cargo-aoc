@@ -1,6 +1,7 @@
 use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
 use error::AocError;
+mod assert;
 #[cfg(feature = "bench")] mod bench;
 mod clippy;
 mod error;
@@ -15,7 +16,7 @@ async fn main() -> Result<(), AocError>
 {
     dotenv::dotenv().ok();
     let mut cmd = Command::new("cargo-aoc")
-        .author("Sebastian, seblyng98@gmail.com")
+        .author("Sebastian, sebastian@lyngjohansen.com")
         .author("Sivert, sivert-joh@hotmail.com")
         .arg(Arg::new("dummy").hide(true))
         .subcommand(
@@ -68,6 +69,12 @@ async fn main() -> Result<(), AocError>
                         .required(false)
                         .action(clap::ArgAction::SetTrue)
                         .help("Run the day with the \"test\" file"),
+                    Arg::new("assert")
+                        .short('a')
+                        .long("assert")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Asserts that the answers are still correct after submitting"),
                     Arg::new("compiler-flags")
                         .short('C')
                         .long("compiler-flags")

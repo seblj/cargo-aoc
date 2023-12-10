@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use clap::ArgMatches;
 use sanitize_html::rules::predefined::DEFAULT;
 
-use super::request::AocRequest;
+use super::{parse_get_answers, request::AocRequest, Task};
 use crate::error::AocError;
 
 pub fn get_submit_task(matches: &ArgMatches) -> Option<Result<Task, AocError>>
@@ -21,33 +21,6 @@ pub fn get_submit_task(matches: &ArgMatches) -> Option<Result<Task, AocError>>
     }
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
-pub enum Task
-{
-    One,
-    Two,
-}
-
-impl std::fmt::Display for Task
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
-    {
-        match self
-        {
-            Task::One => write!(f, "one"),
-            Task::Two => write!(f, "two"),
-        }
-    }
-}
-
-fn get_answer(out: &str, task: Task) -> Option<String>
-{
-    let start = out.split(&format!("Task {}: ", task)).nth(1)?;
-    let encoded_answer = start.split_once('\n').unwrap_or((start, "")).0;
-    let answer = strip_ansi_escapes::strip(encoded_answer);
-    String::from_utf8(answer).ok()
-}
-
 fn parse_and_sanitize_output(output: &str) -> Option<String>
 {
     let start = output.find("<article><p>")?;
@@ -58,7 +31,8 @@ fn parse_and_sanitize_output(output: &str) -> Option<String>
 
 pub async fn submit(output: &str, task: Task, day: u32, year: i32) -> Result<String, AocError>
 {
-    let answer = get_answer(output, task).ok_or(AocError::ParseStdout)?;
+    let (p1, p2) = parse_get_answers(output);
+    let answer = if task == Task::One { p1 } else { p2 }.ok_or(AocError::ParseStdout)?;
     let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
 
     let mut form = HashMap::new();
