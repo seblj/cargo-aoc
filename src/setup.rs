@@ -4,12 +4,17 @@ use crate::{error::AocError, util::get_year};
 
 async fn setup_template_project(year: i32) -> Result<(), AocError>
 {
-    tokio::process::Command::new("cargo")
+    let res = tokio::process::Command::new("cargo")
         .args(["new", &format!("year_{}", year)])
         .output()
         .await?;
 
     let template = format!("{}/template/template.rs", env!("CARGO_MANIFEST_DIR"));
+    if !res.status.success()
+    {
+        return Err(AocError::SetupExists);
+    }
+
     for i in 1..=25
     {
         let dir = format!("year_{year}/src/bin/day_{:0>2}", i);

@@ -54,4 +54,7 @@ pub enum AocError
     #[cfg(feature = "tally")]
     #[error("{0}")]
     RunError(String),
+
+    #[error("Setup for year already exists")]
+    SetupExists,
 }
