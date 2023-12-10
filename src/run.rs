@@ -84,7 +84,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     if matches.get_flag("assert")
     {
-        let year = get_year(matches)?;
+        let year = get_year_from_root().await?;
         assert_answer(&out, day, year).await?;
     }
 
