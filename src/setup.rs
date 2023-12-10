@@ -17,24 +17,26 @@ async fn setup_template_project(year: i32) -> Result<(), AocError>
         return Err(AocError::SetupExists);
     }
 
+    tokio::fs::rename(format!("year_{year}"), format!("{year}")).await?;
+
     let template_dir = format!("{}/template", env!("CARGO_MANIFEST_DIR"));
     let bins = tokio::fs::read(Path::new(&template_dir).join("Cargo.toml.template")).await?;
 
     OpenOptions::new()
         .append(true)
-        .open(format!("year_{}/Cargo.toml", year))
+        .open(format!("{}/Cargo.toml", year))
         .await?
         .write_all(&bins)
         .await?;
 
     for i in 1..=25
     {
-        let dir = format!("year_{year}/day_{:0>2}", i);
+        let dir = format!("{year}/src/day_{:0>2}", i);
         tokio::fs::create_dir_all(&dir).await?;
         tokio::fs::copy(Path::new(&template_dir).join("template.rs"), format!("{dir}/main.rs"))
             .await?;
     }
-    tokio::fs::remove_dir_all(format!("year_{year}/src")).await?;
+    tokio::fs::remove_file(format!("{year}/src/main.rs")).await?;
     Ok(())
 }
 
