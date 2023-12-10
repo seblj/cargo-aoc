@@ -3,7 +3,7 @@ use std::path::Path;
 use clap::ArgMatches;
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 
-use crate::{error::AocError, util::get_year};
+use crate::error::AocError;
 
 async fn setup_template_project(year: i32) -> Result<(), AocError>
 {
@@ -56,6 +56,19 @@ async fn get_session_token() -> Result<(), AocError>
         }
     }
     Ok(())
+}
+
+fn get_year(matches: &ArgMatches) -> Result<i32, AocError>
+{
+    let year = matches.get_one::<String>("year").ok_or(AocError::ArgMatches)?;
+    if year.chars().count() == 2
+    {
+        Ok(format!("20{}", year).parse()?)
+    }
+    else
+    {
+        Ok(year.parse()?)
+    }
 }
 
 pub async fn setup(args: &ArgMatches) -> Result<(), AocError>

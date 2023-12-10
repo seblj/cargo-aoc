@@ -1,4 +1,7 @@
-use std::path::PathBuf;
+use std::{
+    io::{Error, ErrorKind},
+    path::PathBuf,
+};
 
 use clap::ArgMatches;
 
@@ -32,9 +35,16 @@ impl std::fmt::Display for Task
 }
 
 
-pub fn get_year(matches: &ArgMatches) -> Result<i32, AocError>
+pub async fn get_year_from_root() -> Result<i32, AocError>
 {
-    let year = matches.get_one::<String>("year").ok_or(AocError::ArgMatches)?;
+    let root = cargo_path().await?;
+    let year = root
+        .file_name()
+        .ok_or_else(|| {
+            AocError::StdIoErr(Error::new(ErrorKind::NotFound, "could not find Cargo.toml file"))
+        })?
+        .to_string_lossy();
+
     if year.chars().count() == 2
     {
         Ok(format!("20{}", year).parse()?)
