@@ -297,6 +297,7 @@ async fn compile_and_verify_days(
 
     progress.reset();
     progress.set_message("verifying");
+    dbg!(&res);
 
     let days: Vec<Option<BuildRes>> = thread_exec(res.into_iter().flatten(), |day| {
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
@@ -383,8 +384,8 @@ fn format_duration(duration: usize) -> String
 fn print_table(days: Vec<BuildRes>)
 {
     let max_name_len = days.iter().map(|br| br.info.title.len()).max().unwrap();
-    let max_part1_len = days.iter().map(|br| br.info.ans1.as_ref().unwrap().len()).max().unwrap();
-    let max_part2_len = days.iter().map(|br| br.info.ans2.as_ref().unwrap().len()).max().unwrap();
+    let max_part1_len = days.iter().map(|br| br.info.ans1.as_ref().unwrap_or(&"NA".to_string()).len()).max().unwrap();
+    let max_part2_len = days.iter().map(|br| br.info.ans2.as_ref().unwrap_or(&"NA".to_string()).len()).max().unwrap();
 
     let max_part1_time_len = days.iter().map(|br| format_duration(br.time.0).len()).max().unwrap();
     let max_part2_time_len = days
@@ -431,10 +432,10 @@ fn print_table(days: Vec<BuildRes>)
             "║ {:max_name_len$} ║ {:max_part1_len$} ║ {:max_part1_time_len$} ║ {} ║ \
              {:max_part2_len$} ║ {:max_part2_time_len$} ║ {} ║ ",
             day.info.title,
-            day.info.ans1.unwrap(),
+            day.info.ans1.unwrap_or("NA".to_string()),
             format_duration(day.time.0),
             part1_symbol,
-            day.info.ans2.unwrap(),
+            day.info.ans2.unwrap_or("NA".to_string()),
             day.time.1.map(|t| format_duration(t)).unwrap_or("NA".to_string()),
             part2_symbol,
         );
