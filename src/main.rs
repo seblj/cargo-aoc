@@ -8,6 +8,7 @@ mod error;
 mod run;
 mod setup;
 #[cfg(feature = "tally")] mod tally;
+mod test;
 mod token;
 mod util;
 
@@ -88,6 +89,13 @@ async fn main() -> Result<(), AocError>
                 .about("Runs the given day"),
         )
         .subcommand(
+            clap::command!("test").args([Arg::new("day")
+                .short('d')
+                .required(false)
+                .default_value(OsStr::from(chrono::Utc::now().day().to_string()))
+                .help("Day to run tests for")]),
+        )
+        .subcommand(
             Command::new("token")
                 .about("Get or set the session token used to communicate with the AOC servers")
                 .arg_required_else_help(true)
@@ -144,6 +152,7 @@ async fn main() -> Result<(), AocError>
             setup::setup(matches).await.expect("Couldn't setup project properly")
         },
         Some(("run", matches)) => run::run(matches).await?,
+        Some(("test", matches)) => test::test(matches).await?,
         Some(("token", matches)) => token::token(matches).await?,
         Some(("clippy", matches)) => clippy::clippy(matches).await?,
 
