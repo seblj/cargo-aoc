@@ -57,6 +57,10 @@ pub async fn assert_answer(out: &str, day: u32, year: i32) -> Result<(), AocErro
             );
             assert_print_equal(&a2, &p2, Task::Two);
         },
+        (Some(p1), _, Some(a1), None) if day == 25 =>
+        {
+            assert_print_equal(&a1, &p1, Task::One);
+        },
         (Some(p1), _, Some(a1), None) =>
         {
             assert_print_equal(&a1, &p1, Task::One);
