@@ -8,8 +8,7 @@ use crate::{
     util::{file::*, get_day},
 };
 
-async fn create_file(path: &Path) -> Result<(), AocError>
-{
+async fn create_file(path: &Path) -> Result<(), AocError> {
     let folder = path.join(".bench");
 
     let file = fs::read_to_string(path.join("main.rs")).await?;
@@ -41,12 +40,14 @@ criterion_main!(benches);
     Ok(())
 }
 
-async fn create_bench_foler(path: &Path) -> Result<(), AocError>
-{
+async fn create_bench_foler(path: &Path) -> Result<(), AocError> {
     let folder = path.join(".bench");
     fs::create_dir(&folder).await?;
 
-    let template = format!("{}/template/Cargo.toml.benchmark", env!("CARGO_MANIFEST_DIR"));
+    let template = format!(
+        "{}/template/Cargo.toml.benchmark",
+        env!("CARGO_MANIFEST_DIR")
+    );
 
     fs::copy(template, folder.join("Cargo.toml")).await?;
     fs::create_dir(folder.join("benches")).await?;
@@ -56,34 +57,27 @@ async fn create_bench_foler(path: &Path) -> Result<(), AocError>
 
 // Wanted to use tokio here, but got some issues related to recursive async
 // function. https://rust-lang.github.io/async-book/07_workarounds/04_recursion.html
-fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), AocError>
-{
+fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), AocError> {
     use std::fs;
     fs::create_dir_all(&dst)?;
-    for entry in fs::read_dir(src)?
-    {
+    for entry in fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
-        if ty.is_dir()
-        {
+        if ty.is_dir() {
             copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        }
-        else
-        {
+        } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
         }
     }
     Ok(())
 }
 
-pub async fn bench(matches: &ArgMatches) -> Result<(), AocError>
-{
+pub async fn bench(matches: &ArgMatches) -> Result<(), AocError> {
     let day = get_day(matches)?;
     let cargo_folder = cargo_path().await?;
     let day_path = day_path(cargo_folder, day).await?;
 
-    if !day_path.join(".bench").exists()
-    {
+    if !day_path.join(".bench").exists() {
         create_bench_foler(&day_path).await?;
     }
     create_file(&day_path).await?;
@@ -95,10 +89,8 @@ pub async fn bench(matches: &ArgMatches) -> Result<(), AocError>
         .wait()
         .await?;
 
-    if let Some(output) = matches.get_one::<String>("output").map(PathBuf::from)
-    {
-        if !output.is_dir()
-        {
+    if let Some(output) = matches.get_one::<String>("output").map(PathBuf::from) {
+        if !output.is_dir() {
             return Err(AocError::ArgError("Path must be a folder".into()));
         }
         println!("Copying into {}", output.display());

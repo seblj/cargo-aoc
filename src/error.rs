@@ -1,8 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum AocError
-{
+pub enum AocError {
     #[error("Could not find AOC_TOKEN to download input or submit")]
     TokenError(#[from] dotenv::Error),
 

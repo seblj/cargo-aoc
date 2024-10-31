@@ -8,8 +8,7 @@ use reqwest::StatusCode;
 use super::request::AocRequest;
 use crate::error::AocError;
 
-pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::PathBuf, AocError>
-{
+pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::PathBuf, AocError> {
     use std::{collections::VecDeque, io::*};
     let dir_name = format!("day_{:02}", day);
     let dir_name = OsStr::new(&dir_name);
@@ -18,27 +17,22 @@ pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::Pa
     let mut vec = VecDeque::new();
     vec.push_back(root.as_ref().as_os_str().to_os_string());
 
-    while let Some(path) = vec.pop_front()
-    {
+    while let Some(path) = vec.pop_front() {
         let mut stream = tokio::fs::read_dir(&path).await?;
-        while let Ok(Some(entry)) = stream.next_entry().await
-        {
+        while let Ok(Some(entry)) = stream.next_entry().await {
             let file_name = entry.file_name();
-            if ignore.contains(&file_name.as_os_str())
-            {
+            if ignore.contains(&file_name.as_os_str()) {
                 continue;
             }
 
-            if file_name == dir_name
-            {
+            if file_name == dir_name {
                 let mut buff: PathBuf = path.into();
                 buff.push(dir_name);
                 return Ok(buff);
             }
 
             let file_type = entry.file_type().await?;
-            if file_type.is_dir()
-            {
+            if file_type.is_dir() {
                 let mut path = Path::new(&path).to_path_buf();
                 path.push(entry.file_name());
                 let name = path.as_os_str().to_os_string();
@@ -51,43 +45,45 @@ pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::Pa
     Err(Error::new(ErrorKind::NotFound, err_text).into())
 }
 
-pub async fn cargo_path() -> Result<std::path::PathBuf, AocError>
-{
+pub async fn cargo_path() -> Result<std::path::PathBuf, AocError> {
     use std::{collections::VecDeque, io::*};
 
     let mut vec = VecDeque::new();
     let path = std::env::current_dir()?;
     vec.push_back(path.as_os_str().to_os_string());
 
-    let not_found =
-        || AocError::StdIoErr(Error::new(ErrorKind::NotFound, "could not find Cargo.toml file"));
+    let not_found = || {
+        AocError::StdIoErr(Error::new(
+            ErrorKind::NotFound,
+            "could not find Cargo.toml file",
+        ))
+    };
 
-    while let Some(path) = vec.pop_front()
-    {
+    while let Some(path) = vec.pop_front() {
         let mut stream = tokio::fs::read_dir(&path).await?;
-        while let Ok(Some(entry)) = stream.next_entry().await
-        {
-            if entry.file_name() == OsStr::new("Cargo.toml")
-            {
+        while let Ok(Some(entry)) = stream.next_entry().await {
+            if entry.file_name() == OsStr::new("Cargo.toml") {
                 return Ok(path.into());
             }
         }
         // add parent
         let path = Path::new(&path);
-        let path = path.parent().ok_or_else(not_found)?.as_os_str().to_os_string();
+        let path = path
+            .parent()
+            .ok_or_else(not_found)?
+            .as_os_str()
+            .to_os_string();
         vec.push_back(path);
     }
 
     Err(not_found())
 }
 
-pub async fn download_input_file(day: u32, year: i32, dir: &Path) -> Result<(), AocError>
-{
+pub async fn download_input_file(day: u32, year: i32, dir: &Path) -> Result<(), AocError> {
     let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
     let res = AocRequest::new().get(url).await?;
 
-    if res.status() != StatusCode::OK
-    {
+    if res.status() != StatusCode::OK {
         return Err(AocError::DownloadError(format!(
             "Couldn't download input for year: {} and day: {}",
             year, day

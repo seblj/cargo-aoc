@@ -4,7 +4,8 @@ use chrono::prelude::*;
 use clap::ArgMatches;
 use duct::cmd;
 
-#[cfg(feature = "submit")] use crate::util::submit::{self, get_submit_task};
+#[cfg(feature = "submit")]
+use crate::util::submit::{self, get_submit_task};
 use crate::{
     assert::assert_answer,
     error::AocError,
@@ -14,36 +15,28 @@ use crate::{
     },
 };
 
-fn get_input_file(matches: &ArgMatches) -> &str
-{
-    if matches.get_flag("test")
-    {
+fn get_input_file(matches: &ArgMatches) -> &str {
+    if matches.get_flag("test") {
         "test"
-    }
-    else
-    {
+    } else {
         "input"
     }
 }
 
-pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
-{
+pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
     let day = get_day(matches)?;
     let path = cargo_path().await.unwrap_or(std::env::current_dir()?);
     let dir = day_path(path, day).await?;
 
-    if !dir.join("input").exists()
-    {
+    if !dir.join("input").exists() {
         let year = get_year_from_root().await?;
         let current_year = Utc::now().year();
         let current_month = Utc::now().month();
 
-        if year < 2015 || year > current_year
-        {
+        if year < 2015 || year > current_year {
             return Err(AocError::InvalidYear);
         }
-        if year == current_year && current_month < 12
-        {
+        if year == current_year && current_month < 12 {
             return Err(AocError::InvalidMonth);
         }
 
@@ -51,7 +44,9 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
     }
 
     let input = get_input_file(matches);
-    let flags = matches.get_one::<String>("compiler-flags").ok_or(AocError::ArgMatches)?;
+    let flags = matches
+        .get_one::<String>("compiler-flags")
+        .ok_or(AocError::ArgMatches)?;
 
     let reader = cmd!(
         "cargo",
@@ -72,26 +67,22 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError>
 
     let mut out = String::new();
     let unit = get_time_symbol();
-    while let Some(Ok(line)) = lines.next()
-    {
+    while let Some(Ok(line)) = lines.next() {
         println!("{}", line);
-        if line.contains(&format!("{unit})\tTask"))
-        {
+        if line.contains(&format!("{unit})\tTask")) {
             out.push_str(&line);
             out.push('\n');
         }
     }
 
-    if matches.get_flag("assert")
-    {
+    if matches.get_flag("assert") {
         let year = get_year_from_root().await?;
         assert_answer(&out, day, year).await?;
     }
 
     // Only try to submit if the submit flag is passed
     #[cfg(feature = "submit")]
-    if let Some(task) = get_submit_task(matches).transpose()?
-    {
+    if let Some(task) = get_submit_task(matches).transpose()? {
         let year = get_year_from_root().await?;
         let output = submit::submit(&out, task, day, year).await?;
         println!("Task {}: {}", task, output);

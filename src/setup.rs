@@ -5,10 +5,8 @@ use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 
 use crate::error::AocError;
 
-async fn setup_template_project(year: i32) -> Result<(), AocError>
-{
-    if Path::new(&format!("{year}")).exists()
-    {
+async fn setup_template_project(year: i32) -> Result<(), AocError> {
+    if Path::new(&format!("{year}")).exists() {
         return Err(AocError::SetupExists);
     }
 
@@ -17,8 +15,7 @@ async fn setup_template_project(year: i32) -> Result<(), AocError>
         .output()
         .await?;
 
-    if !res.status.success()
-    {
+    if !res.status.success() {
         return Err(AocError::SetupExists);
     }
 
@@ -34,28 +31,27 @@ async fn setup_template_project(year: i32) -> Result<(), AocError>
         .write_all(&bins)
         .await?;
 
-    for i in 1..=25
-    {
+    for i in 1..=25 {
         let dir = format!("{year}/src/day_{:0>2}", i);
         tokio::fs::create_dir_all(&dir).await?;
-        tokio::fs::copy(Path::new(&template_dir).join("template.rs"), format!("{dir}/main.rs"))
-            .await?;
+        tokio::fs::copy(
+            Path::new(&template_dir).join("template.rs"),
+            format!("{dir}/main.rs"),
+        )
+        .await?;
     }
     tokio::fs::remove_file(format!("{year}/src/main.rs")).await?;
     Ok(())
 }
 
-async fn get_session_token() -> Result<(), AocError>
-{
-    if dotenv::var("AOC_TOKEN").is_err()
-    {
+async fn get_session_token() -> Result<(), AocError> {
+    if dotenv::var("AOC_TOKEN").is_err() {
         println!("Paste session token here for automatic download of input files");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
         let input = input.trim();
 
-        if !input.is_empty()
-        {
+        if !input.is_empty() {
             let env_file = std::env::current_dir()?.join(".env");
             tokio::fs::write(env_file, format!("AOC_TOKEN={input}"))
                 .await
@@ -65,21 +61,18 @@ async fn get_session_token() -> Result<(), AocError>
     Ok(())
 }
 
-fn get_year(matches: &ArgMatches) -> Result<i32, AocError>
-{
-    let year = matches.get_one::<String>("year").ok_or(AocError::ArgMatches)?;
-    if year.chars().count() == 2
-    {
+fn get_year(matches: &ArgMatches) -> Result<i32, AocError> {
+    let year = matches
+        .get_one::<String>("year")
+        .ok_or(AocError::ArgMatches)?;
+    if year.chars().count() == 2 {
         Ok(format!("20{}", year).parse()?)
-    }
-    else
-    {
+    } else {
         Ok(year.parse()?)
     }
 }
 
-pub async fn setup(args: &ArgMatches) -> Result<(), AocError>
-{
+pub async fn setup(args: &ArgMatches) -> Result<(), AocError> {
     let year = get_year(args)?;
 
     setup_template_project(year).await?;
