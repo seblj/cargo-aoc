@@ -5,8 +5,7 @@ use duct::cmd;
 
 use crate::{error::AocError, util::get_day};
 
-pub async fn test(matches: &ArgMatches) -> Result<(), AocError>
-{
+pub async fn test(matches: &ArgMatches) -> Result<(), AocError> {
     let day = get_day(matches)?;
 
     let reader = cmd!(
@@ -26,8 +25,7 @@ pub async fn test(matches: &ArgMatches) -> Result<(), AocError>
     let reader = BufReader::new(reader);
     let mut lines = reader.lines();
 
-    while let Some(Ok(line)) = lines.next()
-    {
+    while let Some(Ok(line)) = lines.next() {
         println!("{}", line);
     }
     Ok(())

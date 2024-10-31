@@ -2,19 +2,20 @@ use chrono::Datelike;
 use clap::{builder::OsStr, Arg, Command};
 use error::AocError;
 mod assert;
-#[cfg(feature = "bench")] mod bench;
+#[cfg(feature = "bench")]
+mod bench;
 mod clippy;
 mod error;
 mod run;
 mod setup;
-#[cfg(feature = "tally")] mod tally;
+#[cfg(feature = "tally")]
+mod tally;
 mod test;
 mod token;
 mod util;
 
 #[tokio::main]
-async fn main() -> Result<(), AocError>
-{
+async fn main() -> Result<(), AocError> {
     dotenv::dotenv().ok();
     let mut cmd = Command::new("cargo-aoc")
         .author("Sebastian, sebastian@lyngjohansen.com")
@@ -122,35 +123,40 @@ async fn main() -> Result<(), AocError>
                     "Tallies the  performance of each day and displays information about the \
                      performance",
                 )
-                .arg(Arg::new("runs").long("num-runs").help("Number of runs").default_value("10")),
+                .arg(
+                    Arg::new("runs")
+                        .long("num-runs")
+                        .help("Number of runs")
+                        .default_value("10"),
+                ),
         );
     }
 
     #[cfg(feature = "bench")]
     {
         cmd = cmd.subcommand(
-            Command::new("bench").about("Run benchmarks for the specified day").args([
-                Arg::new("day")
-                    .help("The day to benchmark")
-                    .short('d')
-                    .default_value(chrono::Utc::now().day().to_string()),
-                Arg::new("output")
-                    .help("Output location")
-                    .short('o')
-                    .long("output")
-                    .required(false),
-            ]),
+            Command::new("bench")
+                .about("Run benchmarks for the specified day")
+                .args([
+                    Arg::new("day")
+                        .help("The day to benchmark")
+                        .short('d')
+                        .default_value(chrono::Utc::now().day().to_string()),
+                    Arg::new("output")
+                        .help("Output location")
+                        .short('o')
+                        .long("output")
+                        .required(false),
+                ]),
         );
     }
 
     let help = cmd.render_help();
     let matches = cmd.get_matches();
-    match matches.subcommand()
-    {
-        Some(("setup", matches)) =>
-        {
-            setup::setup(matches).await.expect("Couldn't setup project properly")
-        },
+    match matches.subcommand() {
+        Some(("setup", matches)) => setup::setup(matches)
+            .await
+            .expect("Couldn't setup project properly"),
         Some(("run", matches)) => run::run(matches).await?,
         Some(("test", matches)) => test::test(matches).await?,
         Some(("token", matches)) => token::token(matches).await?,
@@ -161,10 +167,9 @@ async fn main() -> Result<(), AocError>
 
         #[cfg(feature = "tally")]
         Some(("tally", matches)) => tally::tally(matches).await?,
-        _ =>
-        {
+        _ => {
             println!("{}", help);
-        },
+        }
     }
     Ok(())
 }
