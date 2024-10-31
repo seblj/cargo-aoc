@@ -57,7 +57,7 @@ async fn main() -> Result<(), AocError> {
                 .args([
                     Arg::new("day")
                         .short('d')
-                        .required(false)
+                        .required(chrono::Utc::now().day() > 25)
                         .default_value(OsStr::from(chrono::Utc::now().day().to_string()))
                         .help("Day to run"),
                     Arg::new("test")
