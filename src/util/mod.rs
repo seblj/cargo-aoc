@@ -15,6 +15,8 @@ pub mod file;
 pub mod request;
 #[cfg(feature = "submit")]
 pub mod submit;
+#[cfg(feature = "tally")]
+pub mod tally_util;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum Task {
