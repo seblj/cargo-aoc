@@ -121,13 +121,20 @@ async fn main() -> Result<(), AocError> {
             Command::new("tally")
                 .about(
                     "Tallies the  performance of each day and displays information about the \
-                     performance",
+                        performance",
                 )
                 .arg(
                     Arg::new("runs")
                         .long("num-runs")
                         .help("Number of runs")
                         .default_value("10"),
+                )
+                .arg(
+                    Arg::new("table")
+                        .long("table")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Display day info in a nice table"),
                 ),
         );
     }

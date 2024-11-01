@@ -46,14 +46,6 @@ pub enum AocError {
     #[error("argument error {0}")]
     ArgError(String),
 
-    #[cfg(feature = "tally")]
-    #[error("{0}")]
-    BuildError(String),
-
-    #[cfg(feature = "tally")]
-    #[error("{0}")]
-    RunError(String),
-
     #[error("Setup for year already exists")]
     SetupExists,
 }
