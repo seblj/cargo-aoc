@@ -118,7 +118,12 @@ fn print_info(
     println!("\nTOTAL TIME: {}{unit}", total);
 }
 
-fn build_day(day: usize, path: PathBuf, progress: &ProgressBar) -> Result<usize, Error> {
+fn build_day(
+    day: usize,
+    path: PathBuf,
+    progress: &ProgressBar,
+    year: usize,
+) -> Result<usize, Error> {
     let bin = format!("day_{:02}", day);
 
     let mut day_path = path.clone();
@@ -126,7 +131,12 @@ fn build_day(day: usize, path: PathBuf, progress: &ProgressBar) -> Result<usize,
     day_path.push(&bin);
     day_path.push("main.rs");
     if !day_path.exists() {
+        let runtime = Runtime::new().unwrap();
+        let info = runtime
+            .block_on(get_day_title_and_answers(day as u32, year as u32))
+            .expect("Could not get day title and answer");
         return Err(Error {
+            title: info.title,
             day,
             r#type: ErrorTypes::NotImplementd,
         });
@@ -144,7 +154,12 @@ fn build_day(day: usize, path: PathBuf, progress: &ProgressBar) -> Result<usize,
         Ok(day)
     } else {
         let details = extract_comiler_error(String::from_utf8(res.stderr).unwrap());
+        let runtime = Runtime::new().unwrap();
+        let info = runtime
+            .block_on(get_day_title_and_answers(day as u32, year as u32))
+            .expect("Could not get day title and answer");
         Err(Error {
+            title: info.title,
             day,
             r#type: ErrorTypes::CompilerError(details),
         })
@@ -162,12 +177,17 @@ async fn verify_day(
         .await
         .unwrap_or_else(|_| panic!("day {day} is build, but could not find the path"));
 
+    let info = get_day_title_and_answers(day as u32, year as u32)
+        .await
+        .expect("Could not get day title and answer");
+
     let mut input = day_path.clone();
     input.push("input");
     if !input.exists() {
         download_input_file(day as u32, year as i32, &day_path)
             .await
             .map_err(|_| Error {
+                title: info.title.clone(),
                 day,
                 r#type: ErrorTypes::InputDownloadError,
             })?;
@@ -186,12 +206,14 @@ async fn verify_day(
         let details = extract_runtime_error(res.stderr);
         if details == "not implemented" {
             return Err(Error {
+                title: info.title.clone(),
                 day,
                 r#type: ErrorTypes::NotImplementd,
             });
         }
 
         return Err(Error {
+            title: info.title.clone(),
             day,
             r#type: ErrorTypes::RuntimeError(details),
         });
@@ -200,6 +222,7 @@ async fn verify_day(
     let (_t1, _t2) = parse_get_answers(res);
     if _t1.is_none() && _t2.is_none() {
         return Err(Error {
+            title: info.title.clone(),
             day,
             r#type: ErrorTypes::NotImplementd,
         });
@@ -207,9 +230,6 @@ async fn verify_day(
 
     let mut br = BuildRes::new(day, day_path);
     let res = if table_display {
-        let info = get_day_title_and_answers(day as u32, year as u32)
-            .await
-            .expect("Could not get day title and answer");
         br.info.title = info.title;
 
         br.info.correct1 = _t1 == info.part1_answer;
@@ -236,7 +256,7 @@ async fn compile_and_verify_days(
     progress.set_message("compiling");
 
     let res: Vec<_> = thread_exec(&days, |day| {
-        build_day(*day, cargo_folder.clone(), &progress)
+        build_day(*day, cargo_folder.clone(), &progress, year)
     });
 
     progress.reset();
@@ -423,24 +443,10 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
                 );
             }
             Err(e) => {
-                let fmt = |txt: &str, s: String| {
-                    let len = txt.len();
-                    let err = s
-                        .chars()
-                        .take(max_total_len - 2 - len)
-                        .collect::<String>()
-                        .trim()
-                        .replace('\n', "")
-                        .to_owned();
-                    format!("{}: {}", txt, err)
-                };
-                let s = match e.r#type {
-                    ErrorTypes::CompilerError(s) => fmt("COMPILER", s),
-                    ErrorTypes::RuntimeError(s) => fmt("RUNTIME", s),
-                    ErrorTypes::NotImplementd => String::from("UNIMPL"),
-                    ErrorTypes::InputDownloadError => String::from("INPUT DOWNLOAD ERROR"),
-                };
-                println!("║ {:^max_total_len$}  ║", s);
+                let available_space = max_total_len - max_name_len - 2;
+                let mut s = e.r#type.to_string();
+                s.truncate(available_space);
+                println!("║ {:max_name_len$} ║ {:available_space$} ║", e.title, s);
             }
         }
     }

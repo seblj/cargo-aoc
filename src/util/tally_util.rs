@@ -46,10 +46,20 @@ pub enum ErrorTypes {
     InputDownloadError,
     NotImplementd,
 }
-
+impl ToString for ErrorTypes {
+    fn to_string(&self) -> String {
+        match self {
+            ErrorTypes::CompilerError(s) => s.to_owned(),
+            ErrorTypes::RuntimeError(s) => s.to_owned(),
+            ErrorTypes::NotImplementd => String::from("UNIMPL"),
+            ErrorTypes::InputDownloadError => String::from("INPUT DOWNLOAD ERROR"),
+        }
+    }
+}
 #[derive(Debug)]
 pub struct Error {
     pub day: usize,
+    pub title: String,
     pub r#type: ErrorTypes,
 }
 
