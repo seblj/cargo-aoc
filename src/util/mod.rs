@@ -75,15 +75,13 @@ pub fn get_time_symbol() -> String {
 
 #[derive(Debug)]
 pub struct AocInfo {
-    pub day: u32,
-    pub year: u32,
     pub title: String,
     pub part1_answer: Option<String>,
     pub part2_answer: Option<String>,
 }
 
 pub async fn get_day_title_and_answers(day: u32, year: u32) -> Result<AocInfo, AocError> {
-    if let Ok(cache) = read_cache_answers(day, year).await {
+    if let Ok(cache) = read_cache_answers(day).await {
         return Ok(cache);
     }
 
@@ -113,8 +111,6 @@ pub async fn get_day_title_and_answers(day: u32, year: u32) -> Result<AocInfo, A
     let a2 = iter.next();
 
     let info = AocInfo {
-        day,
-        year,
         title: title.to_owned(),
         part1_answer: a1,
         part2_answer: a2,
@@ -154,13 +150,11 @@ pub async fn write_cache_answers(day: u32, info: &AocInfo) -> Result<(), AocErro
     Ok(())
 }
 
-pub async fn read_cache_answers(day: u32, year: u32) -> Result<AocInfo, AocError> {
+pub async fn read_cache_answers(day: u32) -> Result<AocInfo, AocError> {
     let path = get_cache_path(day).await?;
     let res = tokio::fs::read_to_string(path).await?;
     let lines = res.lines().collect::<Vec<_>>();
     Ok(AocInfo {
-        day,
-        year,
         title: lines[0].to_owned(),
         part1_answer: Some(lines[1].to_owned()),
         part2_answer: Some(lines[2].to_owned()),
