@@ -376,10 +376,11 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
     let part2_header_len = max_part2_len + 8 + max_part2_time_len;
 
     let max_total_len = max_name_len + part1_header_len + part2_header_len + 5;
+    let title_length = max_total_len - 2;
 
     println!("╔{}╗", "═".repeat(max_total_len + 3));
     println!(
-        "║ {:^max_total_len$}  ║",
+        "║ {:^title_length$}  ║",
         format!("🦀 Advent of Code {year} 🦀")
     );
     println!(
