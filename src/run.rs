@@ -10,7 +10,7 @@ use crate::{
     assert::assert_answer,
     error::AocError,
     util::{
-        file::{cargo_path, day_path, download_input_file},
+        file::{day_path, download_input_file, get_root_path},
         get_day, get_time_symbol, get_year_from_root,
     },
 };
@@ -25,11 +25,11 @@ fn get_input_file(matches: &ArgMatches) -> &str {
 
 pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
     let day = get_day(matches)?;
-    let path = cargo_path().await.unwrap_or(std::env::current_dir()?);
+    let path = get_root_path()?;
+    let year = path.file_name().unwrap().to_str().unwrap().parse::<i32>().unwrap();
     let dir = day_path(path, day).await?;
 
     if !dir.join("input").exists() {
-        let year = get_year_from_root().await?;
         let current_year = Utc::now().year();
         let current_month = Utc::now().month();
 
@@ -53,8 +53,6 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
         "run",
         "--color",
         "always",
-        "--bin",
-        format!("day_{:02}", day).as_str(),
         input
     )
     .dir(dir)

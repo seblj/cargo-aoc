@@ -3,10 +3,34 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use chrono::Datelike;
 use reqwest::StatusCode;
 
 use super::request::AocRequest;
 use crate::error::AocError;
+
+pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
+    let mut cwd = std::env::current_dir()?;
+
+    loop {
+        let name = cwd.file_name().unwrap();
+
+        let year: i32 = name.to_str().unwrap().parse()?;
+
+        let mut current_year = chrono::Utc::now().year();
+        if chrono::Utc::now().month() != 12 {
+            current_year -= 1;
+        }
+
+        if (2015..=current_year).contains(&year)
+        {
+            return Ok(cwd);
+        }
+        if !cwd.pop() {
+            panic!("whatever");
+        }
+    }
+}
 
 pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::PathBuf, AocError> {
     use std::{collections::VecDeque, io::*};
