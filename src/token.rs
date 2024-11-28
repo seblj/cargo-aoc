@@ -1,10 +1,10 @@
 use clap::ArgMatches;
 
-use crate::{error::AocError, util::file::*};
+use crate::{error::AocError, util::file::get_root_path};
 
 pub async fn token(matches: &ArgMatches) -> Result<(), AocError> {
     if let Some(token) = matches.get_one::<String>("set") {
-        let mut path = cargo_path().await?;
+        let mut path = get_root_path()?;
         path.push(".env");
 
         tokio::fs::write(path, format!("AOC_TOKEN={token}"))

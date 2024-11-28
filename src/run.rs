@@ -11,7 +11,7 @@ use crate::{
     error::AocError,
     util::{
         file::{day_path, download_input_file, get_root_path},
-        get_day, get_time_symbol, get_year_from_root,
+        get_day, get_time_symbol,
     },
 };
 
@@ -74,14 +74,12 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
     }
 
     if matches.get_flag("assert") {
-        let year = get_year_from_root().await?;
         assert_answer(&out, day, year).await?;
     }
 
     // Only try to submit if the submit flag is passed
     #[cfg(feature = "submit")]
     if let Some(task) = get_submit_task(matches).transpose()? {
-        let year = get_year_from_root().await?;
         let output = submit::submit(&out, task, day, year).await?;
         println!("Task {}: {}", task, output);
     }

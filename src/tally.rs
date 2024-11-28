@@ -6,7 +6,7 @@ use tokio::runtime::Runtime;
 
 use crate::{
     error::AocError,
-    util::{file::*, get_day_title_and_answers, get_time_symbol, get_year_from_root},
+    util::{file::*, get_day_title_and_answers, get_time_symbol},
 };
 
 use crate::util::tally_util::*;

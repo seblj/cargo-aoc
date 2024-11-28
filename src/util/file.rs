@@ -13,7 +13,7 @@ pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
     let mut cwd = std::env::current_dir()?;
 
     loop {
-        let name = cwd.file_name().unwrap();
+        let name = cwd.file_name().ok_or_else(|| std::io::Error::last_os_error())?;
 
         let Ok(year): Result<i32, _> = name.to_str().unwrap().parse() else {
             if !cwd.pop() {
@@ -22,11 +22,7 @@ pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
             continue;
         };
 
-
-        let mut current_year = chrono::Utc::now().year();
-        if chrono::Utc::now().month() != 12 {
-            current_year -= 1;
-        }
+        let current_year = chrono::Utc::now().year();
 
         if (2015..=current_year).contains(&year)
         {
@@ -73,40 +69,6 @@ pub async fn day_path<P: AsRef<Path>>(root: P, day: u32) -> Result<std::path::Pa
     }
     let err_text = format!("could not find folder for day_{}", day);
     Err(Error::new(ErrorKind::NotFound, err_text).into())
-}
-
-pub async fn cargo_path() -> Result<std::path::PathBuf, AocError> {
-    use std::{collections::VecDeque, io::*};
-
-    let mut vec = VecDeque::new();
-    let path = std::env::current_dir()?;
-    vec.push_back(path.as_os_str().to_os_string());
-
-    let not_found = || {
-        AocError::StdIoErr(Error::new(
-            ErrorKind::NotFound,
-            "could not find Cargo.toml file",
-        ))
-    };
-
-    while let Some(path) = vec.pop_front() {
-        let mut stream = tokio::fs::read_dir(&path).await?;
-        while let Ok(Some(entry)) = stream.next_entry().await {
-            if entry.file_name() == OsStr::new("Cargo.toml") {
-                return Ok(path.into());
-            }
-        }
-        // add parent
-        let path = Path::new(&path);
-        let path = path
-            .parent()
-            .ok_or_else(not_found)?
-            .as_os_str()
-            .to_os_string();
-        vec.push_back(path);
-    }
-
-    Err(not_found())
 }
 
 pub async fn download_input_file(day: u32, year: i32, dir: &Path) -> Result<(), AocError> {
