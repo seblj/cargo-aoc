@@ -11,7 +11,7 @@ use crate::{
 async fn create_file(path: &Path) -> Result<(), AocError> {
     let folder = path.join(".bench");
 
-    let file = fs::read_to_string(path.join("main.rs")).await?;
+    let file = fs::read_to_string(path.join("src").join("main.rs")).await?;
     let file = file.replace("fn main()", "fn not_main()");
 
     let tests = r#"
@@ -32,6 +32,7 @@ criterion_main!(benches);
 
     let input = path.join("input");
     let tests = tests.replace("XXX", &input.display().to_string());
+    let tests = tests.replace("read_input(\"", "read_input(r\"");
 
     let file = format!("{}\n{}\n{}", remove_errors, file, tests);
 
@@ -74,8 +75,8 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), AocE
 
 pub async fn bench(matches: &ArgMatches) -> Result<(), AocError> {
     let day = get_day(matches)?;
-    let cargo_folder = cargo_path().await?;
-    let day_path = day_path(cargo_folder, day).await?;
+    let root_folder = get_root_path()?;
+    let day_path = day_path(root_folder, day).await?;
 
     if !day_path.join(".bench").exists() {
         create_bench_foler(&day_path).await?;
