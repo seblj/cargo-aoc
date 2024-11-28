@@ -353,10 +353,13 @@ fn format_duration(duration: usize) -> String {
 }
 
 fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
+    println!("{:?}", days);
     let max_name_len = days
         .iter()
-        .flatten()
-        .map(|br| br.info.title.len())
+        .map(|res| match res {
+            Ok(br) => br.info.title.len(),
+            Err(err) => err.title.len()
+        })
         .max()
         .unwrap_or(5);
     let max_part1_len = days
