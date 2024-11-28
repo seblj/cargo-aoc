@@ -15,7 +15,13 @@ pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
     loop {
         let name = cwd.file_name().unwrap();
 
-        let year: i32 = name.to_str().unwrap().parse()?;
+        let Ok(year): Result<i32, _> = name.to_str().unwrap().parse() else {
+            if !cwd.pop() {
+                return  Err(AocError::InvalidYear);
+            }
+            continue;
+        };
+
 
         let mut current_year = chrono::Utc::now().year();
         if chrono::Utc::now().month() != 12 {
@@ -27,7 +33,7 @@ pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
             return Ok(cwd);
         }
         if !cwd.pop() {
-            panic!("whatever");
+            return  Err(AocError::InvalidYear);
         }
     }
 }

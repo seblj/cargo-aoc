@@ -124,12 +124,9 @@ fn build_day(
     progress: &ProgressBar,
     year: usize,
 ) -> Result<usize, Error> {
-    let bin = format!("day_{:02}", day);
-
     let mut day_path = path.clone();
-    day_path.push(&path);
-    day_path.push(&bin);
-    day_path.push("main.rs");
+    day_path.push(format!("day_{:02}", day));
+
     if !day_path.exists() {
         let runtime = Runtime::new().unwrap();
         let info = runtime
@@ -143,8 +140,8 @@ fn build_day(
     }
 
     let res = Command::new("cargo")
-        .args(["build", "--release", "--bin", &bin])
-        .current_dir(path)
+        .args(["build", "--release"])
+        .current_dir(day_path)
         .output()
         .ok()
         .unwrap();
@@ -251,8 +248,10 @@ async fn compile_and_verify_days(
     cargo_folder: PathBuf,
     year: usize,
     table_display: bool,
-) -> Vec<Result<BuildRes, Error>> {
-    let progress = get_progressbar(days.len() as u64);
+) -> Result<Vec<Result<BuildRes, Error>>, AocError> {
+    let possible_days = filter_days_based_on_folder(&days, &cargo_folder)?;
+
+    let progress = get_progressbar(possible_days.len() as u64);
     progress.set_message("compiling");
 
     let res: Vec<_> = thread_exec(&days, |day| {
@@ -275,7 +274,7 @@ async fn compile_and_verify_days(
         })
     });
 
-    days
+    Ok(days)
 }
 
 fn run_day(
@@ -466,13 +465,12 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
     let number_of_runs = get_number_of_runs(matches)?;
     let display_table = matches.get_flag("table");
 
-    let cargo_folder = cargo_path().await?;
-    let year = get_year_from_root().await? as usize;
+    let root_folder = get_root_path()?;
+    let year = root_folder.file_name().unwrap().to_str().unwrap().parse::<usize>().unwrap();
     let possible_days = get_possible_days(year)?;
     let days =
-        compile_and_verify_days(possible_days, cargo_folder.clone(), year, display_table).await;
-
-    let mut days = run_days(days, cargo_folder, number_of_runs)?;
+        compile_and_verify_days(possible_days, root_folder.clone(), year, display_table).await?;
+    let mut days = run_days(days, root_folder, number_of_runs)?;
     let mut dont_have = Vec::new();
 
     days.retain(|elem| {
