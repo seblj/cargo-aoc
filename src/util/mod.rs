@@ -3,10 +3,7 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 use file::get_root_path;
 
-use self::{
-    file::day_path,
-    request::AocRequest,
-};
+use self::{file::day_path, request::AocRequest};
 use crate::error::AocError;
 
 pub mod file;

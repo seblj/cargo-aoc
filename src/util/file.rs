@@ -13,23 +13,24 @@ pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
     let mut cwd = std::env::current_dir()?;
 
     loop {
-        let name = cwd.file_name().ok_or_else(|| std::io::Error::last_os_error())?;
+        let name = cwd
+            .file_name()
+            .ok_or_else(|| std::io::Error::last_os_error())?;
 
         let Ok(year): Result<i32, _> = name.to_str().unwrap().parse() else {
             if !cwd.pop() {
-                return  Err(AocError::InvalidYear);
+                return Err(AocError::InvalidYear);
             }
             continue;
         };
 
         let current_year = chrono::Utc::now().year();
 
-        if (2015..=current_year).contains(&year)
-        {
+        if (2015..=current_year).contains(&year) {
             return Ok(cwd);
         }
         if !cwd.pop() {
-            return  Err(AocError::InvalidYear);
+            return Err(AocError::InvalidYear);
         }
     }
 }

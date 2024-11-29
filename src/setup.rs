@@ -22,7 +22,11 @@ async fn setup_template_project(year: i32) -> Result<(), AocError> {
             .output()
             .await?;
 
-        tokio::fs::copy(format!("{template_dir}/template.rs"), format!("{year}/{day}/main.rs")).await?;
+        tokio::fs::copy(
+            format!("{template_dir}/template.rs"),
+            format!("{year}/{day}/main.rs"),
+        )
+        .await?;
     }
     Ok(())
 }

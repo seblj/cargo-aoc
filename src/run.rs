@@ -26,7 +26,13 @@ fn get_input_file(matches: &ArgMatches) -> &str {
 pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
     let day = get_day(matches)?;
     let path = get_root_path()?;
-    let year = path.file_name().unwrap().to_str().unwrap().parse::<i32>().unwrap();
+    let year = path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .parse::<i32>()
+        .unwrap();
     let dir = day_path(path, day).await?;
 
     if !dir.join("input").exists() {
@@ -48,17 +54,11 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
         .get_one::<String>("compiler-flags")
         .ok_or(AocError::ArgMatches)?;
 
-    let reader = cmd!(
-        "cargo",
-        "run",
-        "--color",
-        "always",
-        input
-    )
-    .dir(dir)
-    .env("RUSTFLAGS", flags)
-    .stderr_to_stdout()
-    .reader()?;
+    let reader = cmd!("cargo", "run", "--color", "always", input)
+        .dir(dir)
+        .env("RUSTFLAGS", flags)
+        .stderr_to_stdout()
+        .reader()?;
 
     let reader = BufReader::new(reader);
     let mut lines = reader.lines();

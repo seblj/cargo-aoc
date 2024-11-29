@@ -357,7 +357,7 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
         .iter()
         .map(|res| match res {
             Ok(br) => br.info.title.len(),
-            Err(err) => err.title.len()
+            Err(err) => err.title.len(),
         })
         .max()
         .unwrap_or(5);
@@ -468,7 +468,13 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
     let display_table = matches.get_flag("table");
 
     let root_folder = get_root_path()?;
-    let year = root_folder.file_name().unwrap().to_str().unwrap().parse::<usize>().unwrap();
+    let year = root_folder
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
     let possible_days = get_possible_days(year)?;
     let days =
         compile_and_verify_days(possible_days, root_folder.clone(), year, display_table).await?;

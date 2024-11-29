@@ -96,8 +96,10 @@ pub fn get_possible_days(year: usize) -> Result<Vec<usize>, AocError> {
     }
 }
 
-pub fn filter_days_based_on_folder(days: &[usize], path: &std::path::Path) -> Result<Vec<usize>, AocError>
-{
+pub fn filter_days_based_on_folder(
+    days: &[usize],
+    path: &std::path::Path,
+) -> Result<Vec<usize>, AocError> {
     let day = |day: usize| format!("{:02}", day);
 
     let folder = std::fs::read_dir(path)?;
@@ -107,9 +109,7 @@ pub fn filter_days_based_on_folder(days: &[usize], path: &std::path::Path) -> Re
         .filter(|entry| entry.file_type().unwrap().is_dir())
         .filter_map(|folder| {
             let folder_name = folder.file_name().into_string().unwrap();
-            days.iter().find(|d|
-            folder_name.contains(&day(**d))
-            )
+            days.iter().find(|d| folder_name.contains(&day(**d)))
         })
         .copied()
         .collect())
