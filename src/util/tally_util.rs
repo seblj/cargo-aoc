@@ -96,6 +96,25 @@ pub fn get_possible_days(year: usize) -> Result<Vec<usize>, AocError> {
     }
 }
 
+pub fn filter_days_based_on_folder(
+    days: &[usize],
+    path: &std::path::Path,
+) -> Result<Vec<usize>, AocError> {
+    let day = |day: usize| format!("{:02}", day);
+
+    let folder = std::fs::read_dir(path)?;
+    Ok(folder
+        .into_iter()
+        .flatten()
+        .filter(|entry| entry.file_type().unwrap().is_dir())
+        .filter_map(|folder| {
+            let folder_name = folder.file_name().into_string().unwrap();
+            days.iter().find(|d| folder_name.contains(&day(**d)))
+        })
+        .copied()
+        .collect())
+}
+
 pub fn parse_get_times(output: Output) -> Result<(usize, Option<usize>), AocError> {
     let unit = get_time_symbol();
     let parse = |line: &str| -> Result<usize, AocError> {
@@ -130,6 +149,7 @@ pub fn parse_get_answers(output: Output) -> (Option<String>, Option<String>) {
 pub fn get_target(path_buf: PathBuf, day: usize) -> PathBuf {
     let bin = format!("day_{:02}", day);
     let mut path_buf = path_buf;
+    path_buf.push(&bin);
     path_buf.push("target/release");
     path_buf.push(&bin);
     path_buf

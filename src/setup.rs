@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use clap::ArgMatches;
-use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 
 use crate::error::AocError;
 
@@ -10,37 +9,25 @@ async fn setup_template_project(year: i32) -> Result<(), AocError> {
         return Err(AocError::SetupExists);
     }
 
-    let res = tokio::process::Command::new("cargo")
-        .args(["new", &format!("year_{}", year)])
-        .output()
-        .await?;
-
-    if !res.status.success() {
-        return Err(AocError::SetupExists);
-    }
-
-    tokio::fs::rename(format!("year_{year}"), format!("{year}")).await?;
+    let year = format!("{}", year);
+    tokio::fs::create_dir(&year).await?;
 
     let template_dir = format!("{}/template", env!("CARGO_MANIFEST_DIR"));
-    let bins = tokio::fs::read(Path::new(&template_dir).join("Cargo.toml.template")).await?;
 
-    OpenOptions::new()
-        .append(true)
-        .open(format!("{}/Cargo.toml", year))
-        .await?
-        .write_all(&bins)
-        .await?;
+    for day in 1..=25 {
+        let day = format!("day_{:0>2}", day);
+        tokio::process::Command::new("cargo")
+            .args(["new", &day])
+            .current_dir(&year)
+            .output()
+            .await?;
 
-    for i in 1..=25 {
-        let dir = format!("{year}/src/day_{:0>2}", i);
-        tokio::fs::create_dir_all(&dir).await?;
         tokio::fs::copy(
-            Path::new(&template_dir).join("template.rs"),
-            format!("{dir}/main.rs"),
+            format!("{template_dir}/template.rs"),
+            format!("{year}/{day}/src/main.rs"),
         )
         .await?;
     }
-    tokio::fs::remove_file(format!("{year}/src/main.rs")).await?;
     Ok(())
 }
 

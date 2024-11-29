@@ -13,9 +13,9 @@ pub async fn clippy(matches: &ArgMatches) -> Result<(), AocError> {
         args.extend(["--fix", "--allow-dirty", "--allow-staged"]);
     }
     let day = format!("day_{:02}", day);
-    args.extend(["--bin", &day]);
 
     let res = tokio::process::Command::new("cargo")
+        .current_dir(day)
         .args(args)
         .output()
         .await?;

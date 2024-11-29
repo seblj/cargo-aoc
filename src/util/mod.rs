@@ -1,14 +1,9 @@
-use std::{
-    io::{Error, ErrorKind},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 use clap::ArgMatches;
+use file::get_root_path;
 
-use self::{
-    file::{cargo_path, day_path},
-    request::AocRequest,
-};
+use self::{file::day_path, request::AocRequest};
 use crate::error::AocError;
 
 pub mod file;
@@ -30,25 +25,6 @@ impl std::fmt::Display for Task {
             Task::One => write!(f, "one"),
             Task::Two => write!(f, "two"),
         }
-    }
-}
-
-pub async fn get_year_from_root() -> Result<i32, AocError> {
-    let root = cargo_path().await?;
-    let year = root
-        .file_name()
-        .ok_or_else(|| {
-            AocError::StdIoErr(Error::new(
-                ErrorKind::NotFound,
-                "could not find Cargo.toml file",
-            ))
-        })?
-        .to_string_lossy();
-
-    if year.chars().count() == 2 {
-        Ok(format!("20{}", year).parse()?)
-    } else {
-        Ok(year.parse()?)
     }
 }
 
@@ -137,7 +113,7 @@ pub fn parse_get_answers(output: &str) -> (Option<String>, Option<String>) {
 
 async fn get_cache_path(day: u32) -> Result<PathBuf, AocError> {
     // Tries to read it from the cache before making a request
-    let path = cargo_path().await?;
+    let path = get_root_path()?;
     Ok(day_path(path, day).await?.join(".answers"))
 }
 
