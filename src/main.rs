@@ -128,13 +128,6 @@ async fn main() -> Result<(), AocError> {
                         .long("num-runs")
                         .help("Number of runs")
                         .default_value("10"),
-                )
-                .arg(
-                    Arg::new("table")
-                        .long("table")
-                        .required(false)
-                        .action(clap::ArgAction::SetTrue)
-                        .help("Display day info in a nice table"),
                 ),
         );
     }
