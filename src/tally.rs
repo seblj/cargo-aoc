@@ -435,10 +435,13 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
                 );
             }
             Err(e) => {
-                let available_space = max_total_len - max_name_len - 2;
+                let available_space = max_total_len - day_header_len - 2;
                 let mut s = e.r#type.to_string();
                 s.truncate(available_space);
-                println!("║ {:max_name_len$} ║ {:available_space$} ║", e.title, s);
+                println!(
+                    "║ {:>2} ║ {:max_name_len$} ║ {:available_space$} ║",
+                    e.day, e.title, s
+                );
             }
         }
     }
