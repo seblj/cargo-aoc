@@ -356,7 +356,7 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
     let max_name_len = days
         .iter()
         .map(|res| match res {
-            Ok(br) => br.info.title.len() + 4, // Account for `12. ` for example
+            Ok(br) => br.info.title.len(),
             Err(err) => err.title.len(),
         })
         .max()
@@ -393,10 +393,11 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
         .max()
         .unwrap_or(5);
 
+    let day_header_len = max_name_len + 5;
     let part1_header_len = max_part1_len + 8 + max_part1_time_len;
     let part2_header_len = max_part2_len + 8 + max_part2_time_len;
 
-    let max_total_len = max_name_len + part1_header_len + part2_header_len + 5;
+    let max_total_len = day_header_len + part1_header_len + part2_header_len + 5;
     let title_length = max_total_len - 2;
 
     println!("╔{}╗", "═".repeat(max_total_len + 3));
@@ -406,16 +407,17 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
     );
     println!(
         "╠{}╦{}╦{}╣",
-        "═".repeat(max_name_len + 2),
+        "═".repeat(day_header_len + 2),
         "═".repeat(part1_header_len + 2),
         "═".repeat(part2_header_len + 2),
     );
     println!(
-        "║ {:max_name_len$} ║ {:part1_header_len$} ║ {:part2_header_len$} ║",
+        "║ {:day_header_len$} ║ {:part1_header_len$} ║ {:part2_header_len$} ║",
         "Day", "Part 1", "Part 2"
     );
     println!(
-        "╠{}╬{}╦{}╦{}╬{}╦{}╦{}╣",
+        "╠{}╦{}╬{}╦{}╦{}╬{}╦{}╦{}╣",
+        "═".repeat(4),
         "═".repeat(max_name_len + 2),
         "═".repeat(max_part1_len + 2),
         "═".repeat(max_part1_time_len + 2),
@@ -432,9 +434,10 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
                 let part2_symbol = if day.info.correct2 { "✅" } else { "❌" };
 
                 println!(
-                    "║ {:max_name_len$} ║ {:max_part1_len$} ║ {:max_part1_time_len$} ║ {} ║ \
+                    "║ {:>2} ║ {:max_name_len$} ║ {:max_part1_len$} ║ {:max_part1_time_len$} ║ {} ║ \
                      {:max_part2_len$} ║ {:max_part2_time_len$} ║ {} ║ ",
-                    format!("{:>2}. {}", day.day, day.info.title),
+                    day.day,
+                    day.info.title,
                     day.info.ans1.unwrap_or("NA".to_string()),
                     format_duration(day.time.0),
                     part1_symbol,
@@ -452,7 +455,8 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
         }
     }
     println!(
-        "╚{}╩{}╩{}╩{}╩{}╩{}╩{}╝",
+        "╚{}╩{}╩{}╩{}╩{}╩{}╩{}╩{}╝",
+        "═".repeat(4),
         "═".repeat(max_name_len + 2),
         "═".repeat(max_part1_len + 2),
         "═".repeat(max_part1_time_len + 2),
