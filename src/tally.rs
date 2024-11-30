@@ -341,7 +341,7 @@ fn format_duration(duration: usize) -> String {
 }
 
 fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
-    let max_name_len = days
+    /*let max_name_len = days
         .iter()
         .map(|res| match res {
             Ok(br) => br.info.title.len(),
@@ -455,7 +455,12 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
         "═".repeat(max_part2_len + 2),
         "═".repeat(max_part2_time_len + 2),
         "═".repeat(4),
-    );
+    );*/
+
+    Table::default()
+        .set_header(format!("🦀 Advent of Code {year} 🦀"))
+        .add_row(vec!["Day", "Part 1", "Part 2"])
+        .display();
 }
 
 pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
@@ -493,4 +498,110 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
     print_info(have, dont_have, number_of_runs);
 
     Ok(())
+}
+
+#[derive(Default)]
+struct Table {
+    header: String,
+    rows: Vec<Vec<String>>,
+}
+
+impl Table {
+    fn set_header(mut self, header: String) -> Self {
+        self.header = header;
+        self
+    }
+    fn add_row<S: AsRef<str>>(mut self, row: Vec<S>) -> Self {
+        self.rows
+            .push(row.into_iter().map(|s| s.as_ref().to_owned()).collect());
+        self
+    }
+}
+
+impl Table {
+    const SPACES_LEN: usize = 2;
+    const BOARDER_LEN: usize = 2;
+    fn max_width(&self) -> usize {
+        let max = self.header.len().max(
+            self.rows
+                .iter()
+                .flatten()
+                .map(|s| s.len())
+                .max()
+                .unwrap_or(0),
+        );
+
+        max
+    }
+
+    fn display_bottom_connect_with_row(&self, idx: usize) {
+        let row = &self.rows[idx];
+
+        let mut vec = row
+            .iter()
+            .map(|s| s.len() + Self::SPACES_LEN)
+            .collect::<Vec<_>>();
+
+        let total = vec.iter().sum::<usize>();
+
+        // Pad out the rest (if any), starting from the back
+        let remaining = self.table_width() - Self::BOARDER_LEN - total;
+        for (_, i) in (0..remaining).zip((0..vec.len()).rev().cycle()) {
+            vec[i] += 1;
+        }
+
+        let line = vec
+            .into_iter()
+            .map(|len| "═".repeat(len))
+            .collect::<Vec<_>>()
+            .join("╦");
+
+        println!("╠{line}╣",);
+    }
+
+    fn display_row(&self, idx: usize) {
+        let row = &self.rows[idx];
+        let mut vec = row
+            .iter()
+            .map(|s| s.len() + Self::SPACES_LEN)
+            .collect::<Vec<_>>();
+
+        let total = vec.iter().sum::<usize>();
+
+        // Pad out the rest (if any), starting from the back
+        let remaining = self.table_width() - Self::BOARDER_LEN - total;
+        for (_, i) in (0..remaining).zip((0..vec.len()).rev().cycle()) {
+            vec[i] += 1;
+        }
+
+        let line = vec
+            .into_iter()
+            .zip(row.iter())
+            .map(|(len, s)| format!("{:^len$}", s))
+            .collect::<Vec<_>>()
+            .join("║");
+
+        println!("║{line}║",);
+    }
+
+    fn table_width(&self) -> usize {
+        self.max_width() + Self::SPACES_LEN + Self::BOARDER_LEN
+    }
+
+    fn display_top(&self) {
+        let s = "═".repeat(self.table_width());
+        println!("╔{s}╗");
+    }
+
+    fn display_header(&self) {
+        let max = self.table_width() - Self::SPACES_LEN;
+        println!("║{:^max$}║", self.header);
+    }
+
+    fn display(&self) {
+        self.display_top();
+        self.display_header();
+        self.display_bottom_connect_with_row(0);
+        self.display_row(0);
+    }
 }
