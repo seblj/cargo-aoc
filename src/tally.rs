@@ -167,7 +167,6 @@ async fn verify_day(
     day: usize,
     path: PathBuf,
     year: usize,
-    table_display: bool,
     progress: &ProgressBar,
 ) -> Result<BuildRes, Error> {
     let day_path = day_path(path.clone(), day as u32)
@@ -225,29 +224,24 @@ async fn verify_day(
         });
     }
 
-    let mut br = BuildRes::new(day, day_path);
-    let res = if table_display {
-        br.info.title = info.title;
+    let mut res = BuildRes::new(day, day_path);
+    res.info.title = info.title;
 
-        br.info.correct1 = _t1 == info.part1_answer;
-        br.info.correct2 = _t2 == info.part2_answer;
+    res.info.correct1 = _t1 == info.part1_answer;
+    res.info.correct2 = _t2 == info.part2_answer;
 
-        br.info.ans1 = info.part1_answer;
-        br.info.ans2 = info.part2_answer;
+    res.info.ans1 = info.part1_answer;
+    res.info.ans2 = info.part2_answer;
 
-        Ok(br)
-    } else {
-        Ok(br)
-    };
     progress.inc(1);
-    res
+
+    Ok(res)
 }
 
 async fn compile_and_verify_days(
     days: Vec<usize>,
     cargo_folder: PathBuf,
     year: usize,
-    table_display: bool,
 ) -> Result<Vec<Result<BuildRes, Error>>, AocError> {
     let possible_days = filter_days_based_on_folder(&days, &cargo_folder)?;
 
@@ -264,13 +258,7 @@ async fn compile_and_verify_days(
     let days: Vec<_> = thread_exec(res, |day| {
         day.and_then(|day| {
             let runtime = Runtime::new().unwrap();
-            runtime.block_on(verify_day(
-                day,
-                cargo_folder.clone(),
-                year,
-                table_display,
-                &progress,
-            ))
+            runtime.block_on(verify_day(day, cargo_folder.clone(), year, &progress))
         })
     });
 
@@ -469,7 +457,6 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
 
 pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
     let number_of_runs = get_number_of_runs(matches)?;
-    let display_table = true;
 
     let root_folder = get_root_path()?;
     let year = root_folder
@@ -480,8 +467,7 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
         .parse::<usize>()
         .unwrap();
     let possible_days = get_possible_days(year)?;
-    let days =
-        compile_and_verify_days(possible_days, root_folder.clone(), year, display_table).await?;
+    let days = compile_and_verify_days(possible_days, root_folder.clone(), year).await?;
     let mut days = run_days(days, root_folder, number_of_runs)?;
     let mut dont_have = Vec::new();
 
