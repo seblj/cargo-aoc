@@ -356,7 +356,7 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
     let max_name_len = days
         .iter()
         .map(|res| match res {
-            Ok(br) => br.info.title.len(),
+            Ok(br) => br.info.title.len() + 4, // Account for `12. ` for example
             Err(err) => err.title.len(),
         })
         .max()
@@ -434,7 +434,7 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
                 println!(
                     "║ {:max_name_len$} ║ {:max_part1_len$} ║ {:max_part1_time_len$} ║ {} ║ \
                      {:max_part2_len$} ║ {:max_part2_time_len$} ║ {} ║ ",
-                    day.info.title,
+                    format!("{:>2}. {}", day.day, day.info.title),
                     day.info.ans1.unwrap_or("NA".to_string()),
                     format_duration(day.time.0),
                     part1_symbol,
