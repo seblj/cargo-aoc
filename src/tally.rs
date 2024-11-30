@@ -465,7 +465,7 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
 
 pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
     let number_of_runs = get_number_of_runs(matches)?;
-    let display_table = matches.get_flag("table");
+    let display_table = true;
 
     let root_folder = get_root_path()?;
     let year = root_folder
@@ -490,16 +490,14 @@ pub async fn tally(matches: &ArgMatches) -> Result<(), AocError> {
         }
     });
 
-    if display_table {
-        print_table(days, year);
-    } else {
-        let have = days
-            .into_iter()
-            .flatten()
-            .map(|br| (br.day, (br.time.0, br.time.1)))
-            .collect();
-        print_info(have, dont_have, number_of_runs);
-    }
+    let have = days
+        .iter()
+        .flatten()
+        .map(|br| (br.day, (br.time.0, br.time.1)))
+        .collect();
+
+    print_table(days, year);
+    print_info(have, dont_have, number_of_runs);
 
     Ok(())
 }
