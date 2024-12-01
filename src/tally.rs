@@ -606,15 +606,21 @@ impl Table {
 
     fn display(self) {
         self.display_section(0);
+        //self.display_section(1);
     }
 
     fn display_section(&self, idx: usize) {
         self.display_section_top(idx);
         let sec = &self.sections[idx];
+
         for i in 0..sec.rows.len() {
             self.display_section_body(sec, i);
         }
-        self.display_section_bottom(idx);
+        if idx == self.sections.len() - 1 {
+            self.display_section_bottom(idx);
+        } else {
+            self._display_section_bottom(idx + 1);
+        }
     }
 
     fn display_section_body(&self, sec: &Section, idx: usize) {
@@ -661,6 +667,28 @@ impl Table {
             .collect::<Vec<_>>()
             .join("╩");
         println!("{}{}{}", edges.0, line, edges.1);
+    }
+
+    fn _display_section_bottom(&self, idx: usize) {
+        let sec = &self.sections[idx];
+
+        let mut vec = Vec::new();
+        for y in 0..sec.rows[0].cols.len() {
+            let mut max = 0;
+            for h in 0..sec.rows.len() {
+                max = max.max(sec.rows[h].cols[y].len());
+            }
+            vec.push(max);
+        }
+
+        self.pad_vec(&mut vec, None);
+
+        let line = vec
+            .into_iter()
+            .map(|len| "═".repeat(len))
+            .collect::<Vec<_>>()
+            .join("╦");
+        println!("╠{}╣", line);
     }
 
     fn display_section_top(&self, idx: usize) {
