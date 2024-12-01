@@ -19,6 +19,7 @@ criterion = { version = "0.5.1", optional = true }
 indicatif = { version = "0.17.2", optional = true }
 duct = "0.13.6"
 thiserror = "1.0.50"
+unicode-width = "0.2.0"
 
 
 [features]
