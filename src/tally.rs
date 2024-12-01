@@ -506,6 +506,26 @@ fn print_table(days: Vec<Result<BuildRes, Error>>, year: usize) {
                     },
                 ],
             },
+            Section {
+                rows: vec![
+                    Row {
+                        cols: vec![
+                            Cell("foo".to_string()),
+                            Cell("bar".to_string()),
+                            Cell("foo".to_string()),
+                            Cell("bar".to_string()),
+                        ],
+                    },
+                    Row {
+                        cols: vec![
+                            Cell("baz".to_string()),
+                            Cell("bazzzz".to_string()),
+                            Cell("foo".to_string()),
+                            Cell("bar".to_string()),
+                        ],
+                    },
+                ],
+            },
         ],
     }
     .display();
@@ -557,6 +577,11 @@ impl Cell {
             .map(|ch| ch.width().expect("unknown unicode width"))
             .sum::<usize>()
     }
+
+    fn unicode_extra(&self) -> usize {
+        use unicode_width::*;
+        self.0.chars().map(|ch| ch.width().unwrap() - 1).sum()
+    }
 }
 
 struct Row {
@@ -567,17 +592,6 @@ impl Row {
     fn width(&self) -> usize {
         let num_separator = self.cols.len().saturating_sub(1);
         self.cols.iter().map(|cell| cell.len()).sum::<usize>() + num_separator
-    }
-
-    fn unicode_extra(&self) -> usize {
-        use unicode_width::*;
-        let mut sum = 0;
-        for cell in &self.cols {
-            for ch in cell.0.chars() {
-                sum += ch.width().unwrap() - 1;
-            }
-        }
-        sum
     }
 }
 
@@ -605,12 +619,13 @@ impl Table {
     }
 
     fn display(self) {
+        self.display_section_top(0);
         self.display_section(0);
-        //self.display_section(1);
+        self.display_section(1);
+        self.display_section(2);
     }
 
     fn display_section(&self, idx: usize) {
-        self.display_section_top(idx);
         let sec = &self.sections[idx];
 
         for i in 0..sec.rows.len() {
@@ -618,9 +633,71 @@ impl Table {
         }
         if idx == self.sections.len() - 1 {
             self.display_section_bottom(idx);
-        } else {
+        } else if idx == 0 {
             self._display_section_bottom(idx + 1);
+        } else {
+            self.__display_section_bottom(idx);
         }
+    }
+
+    fn get_joined(&self, idx: usize) -> Vec<(usize, char)> {
+        let get = |i: usize| -> Vec<usize> {
+            let sec = &self.sections[i];
+
+            let mut vec = Vec::new();
+            for y in 0..sec.rows[0].cols.len() {
+                let mut max = 0;
+                for h in 0..sec.rows.len() {
+                    max = max.max(sec.rows[h].cols[y].len());
+                }
+                vec.push(max);
+            }
+            vec
+        };
+
+        let mut fst = get(idx);
+        let n = fst.len() - 1;
+        self._pad_vec(&mut fst, n);
+
+        for i in 1..fst.len() {
+            fst[i] += fst[i - 1];
+        }
+
+        let mut vec1 = Vec::new();
+        for i in 0..fst.len() - 1 {
+            vec1.push((fst[i] + i, '╩'));
+        }
+
+        let mut snd = get(idx + 1);
+        let n = snd.len() - 1;
+        self._pad_vec(&mut snd, n);
+
+        for i in 1..snd.len() {
+            snd[i] += snd[i - 1];
+        }
+
+        let mut vec2 = Vec::new();
+        for i in 0..snd.len() - 1 {
+            vec2.push((snd[i] + i, '╦'));
+        }
+
+        vec1.append(&mut vec2);
+        vec1.sort_by_key(|k| k.0);
+        vec1
+    }
+
+    fn __display_section_bottom(&self, idx: usize) {
+        let joined = self.get_joined(idx);
+
+        let max = self.max_section_width();
+        let mut s = vec!['═'; max];
+
+        for (i, (idx, ch)) in joined.into_iter().enumerate() {
+            s[idx] = ch;
+        }
+        let line: String = s.into_iter().collect();
+
+        println!("╠{line}╣");
     }
 
     fn display_section_body(&self, sec: &Section, idx: usize) {
@@ -635,12 +712,16 @@ impl Table {
             vec.push(max);
         }
 
-        self.pad_vec(&mut vec, Some(&row));
+        let num_sep = vec.len() - 1;
+        self._pad_vec(&mut vec, num_sep);
 
         let line = vec
             .into_iter()
             .zip(&row.cols)
-            .map(|(len, col)| format!("{:^len$}", col.0))
+            .map(|(len, col)| {
+                let len = len - col.unicode_extra();
+                format!("{:^len$}", col.0)
+            })
             .collect::<Vec<_>>()
             .join("║");
         println!("║{line}║",);
@@ -659,7 +740,8 @@ impl Table {
             vec.push(max);
         }
 
-        self.pad_vec(&mut vec, None);
+        let num_sep = vec.len() - 1;
+        self._pad_vec(&mut vec, num_sep);
 
         let line = vec
             .into_iter()
@@ -681,7 +763,8 @@ impl Table {
             vec.push(max);
         }
 
-        self.pad_vec(&mut vec, None);
+        let num_sep = vec.len() - 1;
+        self._pad_vec(&mut vec, num_sep);
 
         let line = vec
             .into_iter()
@@ -704,7 +787,7 @@ impl Table {
             vec.push(max);
         }
 
-        self.pad_vec(&mut vec, None);
+        self.pad_vec(&mut vec);
 
         let line = vec
             .into_iter()
@@ -714,10 +797,17 @@ impl Table {
         println!("{}{}{}", edges.0, line, edges.1);
     }
 
-    fn pad_vec(&self, vec: &mut Vec<usize>, row: Option<&Row>) {
+    fn pad_vec(&self, vec: &mut Vec<usize>) {
         let total = vec.iter().sum::<usize>();
-        let remaining =
-            self.max_section_width() - total - row.map(|row| row.unicode_extra()).unwrap_or(0);
+        let remaining = self.max_section_width() - total;
+        // Pad out the rest (if any), starting from the back
+        for (_, i) in (0..remaining).zip((0..vec.len()).rev().cycle()) {
+            vec[i] += 1;
+        }
+    }
+    fn _pad_vec(&self, vec: &mut Vec<usize>, num_sep: usize) {
+        let total = vec.iter().sum::<usize>();
+        let remaining = self.max_section_width() - total - num_sep;
         // Pad out the rest (if any), starting from the back
         for (_, i) in (0..remaining).zip((0..vec.len()).rev().cycle()) {
             vec[i] += 1;
