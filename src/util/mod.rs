@@ -3,7 +3,10 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 use file::get_root_path;
 
-use self::{file::day_path, request::AocRequest};
+use self::{
+    file::{day_path, get_day_from_path},
+    request::AocRequest,
+};
 use crate::error::AocError;
 
 pub mod file;
@@ -36,6 +39,13 @@ pub fn get_day(matches: &ArgMatches) -> Result<u32, AocError> {
     if !(1..=25).contains(&day) {
         Err(AocError::InvalidRunDay)
     } else {
+        let source = matches.value_source("day").unwrap();
+        if source == clap::parser::ValueSource::DefaultValue {
+            if let Ok(Some(day)) = get_day_from_path() {
+                return Ok(day);
+            }
+        }
+
         Ok(day)
     }
 }
