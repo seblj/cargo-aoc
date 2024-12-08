@@ -9,6 +9,42 @@ use reqwest::StatusCode;
 use super::request::AocRequest;
 use crate::error::AocError;
 
+pub fn get_day_from_path() -> Result<Option<u32>, AocError> {
+    let get_day = |s: &str| -> Option<u32> {
+        let mut num = 0;
+        let mut i = 1;
+
+        for ch in s.chars() {
+            if let Some(d) = ch.to_digit(10) {
+                if num == 0 && d == 0 {
+                    continue;
+                }
+                num += d * i;
+                i *= 10;
+            }
+        }
+
+        (1..=25).contains(&num).then_some(num)
+    };
+
+    let mut cwd = std::env::current_dir()?;
+
+    loop {
+        let name = cwd.file_name();
+        let name = name
+            .ok_or(AocError::InvalidRunDay)?
+            .to_str()
+            .ok_or(AocError::InvalidRunDay)?;
+
+        if let Some(day) = get_day(&name) {
+            return Ok(Some(day));
+        }
+        if !cwd.pop() {
+            return Ok(None);
+        }
+    }
+}
+
 pub fn get_root_path() -> Result<std::path::PathBuf, AocError> {
     let mut cwd = std::env::current_dir()?;
 
