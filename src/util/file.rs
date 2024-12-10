@@ -11,18 +11,17 @@ use crate::error::AocError;
 
 pub fn get_day_from_path() -> Result<Option<u32>, AocError> {
     let get_day = |s: &str| -> Option<u32> {
-        let mut num = 0;
-        let mut i = 1;
+        let mut num = "".to_string();
 
         for ch in s.chars() {
-            if let Some(d) = ch.to_digit(10) {
-                if num == 0 && d == 0 {
+            if ch.is_ascii_digit() {
+                if ch == '0' && num.is_empty() {
                     continue;
                 }
-                num += d * i;
-                i *= 10;
+                num.push(ch);
             }
         }
+        let num = num.parse::<u32>().unwrap();
 
         (1..=25).contains(&num).then_some(num)
     };
