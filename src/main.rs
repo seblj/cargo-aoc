@@ -86,6 +86,12 @@ async fn main() -> Result<(), AocError> {
                         .required(false)
                         .help("Submit answer")
                         .conflicts_with("test"),
+                    Arg::new("release")
+                        .short('r')
+                        .long("release")
+                        .required(false)
+                        .action(clap::ArgAction::SetTrue)
+                        .help("Run it release mode"),
                 ])
                 .about("Runs the given day"),
         )

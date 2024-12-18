@@ -33,6 +33,7 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
         .unwrap()
         .parse::<i32>()
         .unwrap();
+
     let dir = day_path(path, day).await?;
 
     if !dir.join("input").exists() {
@@ -54,7 +55,12 @@ pub async fn run(matches: &ArgMatches) -> Result<(), AocError> {
         .get_one::<String>("compiler-flags")
         .ok_or(AocError::ArgMatches)?;
 
-    let reader = cmd!("cargo", "run", "--color", "always", input)
+    let cmd = if matches.get_flag("release") {
+        cmd!("cargo", "run", "--release", "--color", "always", input)
+    } else {
+        cmd!("cargo", "run", "--color", "always", input)
+    };
+    let reader = cmd
         .dir(dir)
         .env("RUSTFLAGS", flags)
         .stderr_to_stdout()
